@@ -1,5 +1,3 @@
-import numpy as np
-
 class Structure:
     def __init__(self):
         self.elements = dict()

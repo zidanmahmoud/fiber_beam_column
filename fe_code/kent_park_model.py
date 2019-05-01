@@ -1,5 +1,3 @@
-import numpy as np
-
 class KentParkModel(object):
     """
     Material KentParkModel provides the constitutive model for concretes.
