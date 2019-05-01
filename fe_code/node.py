@@ -32,7 +32,7 @@ class Node(object):
         Displacement in z direction.
     """
 
-    def __init__(self, id, x, y, z):
+    def __init__(self, node_id, x, y, z):
         """Create a new node.
 
         Parameters
@@ -46,37 +46,37 @@ class Node(object):
         z : float
             Initial Z coordinate of the node.
         """
-        self.id = id
-        self.x = x
-        self.y = y
-        self.z = z
+        self._id = node_id
+        self._x = x
+        self._y = y
+        self._z = z
         self.reference_x = x
         self.reference_y = y
         self.reference_z = z
 
     @property
     def u(self):
-        return self.x - self.reference_x
+        return self._x - self.reference_x
 
     @u.setter
     def u(self, value):
-        self.x = self.reference_x + value
+        self._x = self.reference_x + value
 
     @property
     def v(self):
-        return self.y - self.reference_y
+        return self._y - self.reference_y
 
     @v.setter
     def v(self, value):
-        self.y = self.reference_y + value
+        self._y = self.reference_y + value
 
     @property
     def w(self):
-        return self.z - self.reference_z
+        return self._z - self.reference_z
 
     @w.setter
     def w(self, value):
-        self.z = self.reference_z + value
+        self._z = self.reference_z + value
 
     def get_reference_location(self):
         """Location of the node in the reference configuration.
@@ -86,11 +86,11 @@ class Node(object):
         location : ndarray
             Numpy array containing the reference coordinates X, Y and Z.
         """
-        x = self.reference_x
-        y = self.reference_y
-        z = self.reference_z
+        _x = self.reference_x
+        _y = self.reference_y
+        _z = self.reference_z
 
-        return np.array([x, y, z], dtype=float)
+        return np.array([_x, _y, _z], dtype=float)
 
     def get_actual_location(self):
         """Location of the node in the actual configuration.
@@ -100,11 +100,11 @@ class Node(object):
         location : ndarray
             Numpy array containing the actual coordinates X, Y and Z.
         """
-        x = self.x
-        y = self.y
-        z = self.z
+        _x = self._x
+        _y = self._y
+        _z = self._z
 
-        return np.array([x, y, z], dtype=float)
+        return np.array([_x, _y, _z], dtype=float)
 
     def get_displacement(self):
         """Displacement of the node in the actual configuration.
@@ -141,7 +141,7 @@ class Node(object):
         if dof_type == 'w':
             return self.w
 
-        raise AttributeError('Node has no dof of type \'{}\''.format(dof_type))
+        raise AttributeError(f"Node has no dof of type \'{dof_type}\'")
 
     def set_dof_state(self, dof_type, value):
         """Update the node according to the value of the given dof type.
@@ -165,4 +165,4 @@ class Node(object):
         elif dof_type == 'w':
             self.w = value
         else:
-            raise AttributeError('Node has no dof of type \'{}\''.format(dof_type))
+            raise AttributeError(f"Node has no dof of type \'{dof_type}\'")

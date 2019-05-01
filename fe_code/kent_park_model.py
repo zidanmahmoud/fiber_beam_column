@@ -41,7 +41,7 @@ class KentParkModel(object):
     material_tangent_modulus : float
     """
 
-    def __init__(self, id, compressive_strength, confinement_factor, epu, Z):
+    def __init__(self, compressive_strength, confinement_factor, epu, Z):
         """
         Create a new material.
 
@@ -62,7 +62,6 @@ class KentParkModel(object):
             Softening slope
         """
 
-        self.id = id
         self.compressive_strength = compressive_strength
         self.confinement_factor = confinement_factor
         self.ep0 = -0.0027*confinement_factor
@@ -255,9 +254,6 @@ class KentParkModel(object):
     '''
     other:
     '''
-    def get_material_id(self):
-
-        return self.id
 
     def get_material_PEEQ(self):
 
@@ -294,28 +290,12 @@ class KentParkModel(object):
 
         loading = True
         loading *= self.material_strain_incr < 0
-        #if self.last_NR_change_in_material_strain_incr > 0:
-            #print('********************************************************')
-            #print('********************************************************')
-            #print('********************************************************')
-            #print('********************************************************')
-            #print('last_NR_change_in_material_strain_incr = ', self.last_NR_change_in_material_strain_incr)
         return loading
 
     def print_warning(self, nx,ny,nz):
 
         eps = self.material_strain
         epr = self.epr
-        if eps <= epr:
-            '''
-            if not self.check_load():
-                print('section', nx)
-                print('ny, nz = ', ny, ',', nz)
-                print('change_in_material_strain_incr', self.change_in_material_strain_incr)
-                print('warning: strain exceeds reverse point.')
-                print('epr = ',epr)
-                print('eps = ',eps)
-            '''
 
 
     def calculate_material_stress(self):
@@ -330,14 +310,11 @@ class KentParkModel(object):
         epp = self.epp
         epu = self.epu
         if self.check_load():
-            #print('it is loading')
             if eps > epp:
                 sg = 0
             elif eps > epr and eps < epp:
                 sg = sgr / (epr -epp) * (eps - epr) + sgr
             elif eps <= epr:
-                #print('on model')
-                #print('epu= ', epu)
                 if eps > 0:
                     sg = 0
                 elif eps > ep0:
