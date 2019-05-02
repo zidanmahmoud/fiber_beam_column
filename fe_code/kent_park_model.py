@@ -1,4 +1,6 @@
-class KentParkModel(object):
+from .material import Material
+
+class KentParkModel(Material):
     """
     Material KentParkModel provides the constitutive model for concretes.
 

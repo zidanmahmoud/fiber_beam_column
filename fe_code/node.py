@@ -10,8 +10,6 @@ class Node(object):
 
     Attributes
     ----------
-    id : int or str
-        Unique ID.
     reference_x : float
         Reference X coordinate.
     reference_y : float
@@ -32,13 +30,11 @@ class Node(object):
         Displacement in z direction.
     """
 
-    def __init__(self, node_id, x, y, z):
+    def __init__(self, x, y, z):
         """Create a new node.
 
         Parameters
         ----------
-        id : int or str
-            Unique ID of the node.
         x : float
             Initial X coordinate of the node.
         y : float
@@ -46,7 +42,6 @@ class Node(object):
         z : float
             Initial Z coordinate of the node.
         """
-        self._id = node_id
         self._x = x
         self._y = y
         self._z = z

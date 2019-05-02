@@ -4,3 +4,7 @@ class Fiber:
         self._z = z
         self._area = area
         self._material_class = material_class
+
+    def initialize(self):
+        nz = 0
+        self._material_class.determin_direction(nz)

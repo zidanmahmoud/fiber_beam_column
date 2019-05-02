@@ -1,7 +1,6 @@
-import numpy as np
-import matplotlib.pyplot as plt
-from math import isnan
-class MenegottoPintoModel(object):
+from .material import Material
+
+class MenegottoPintoModel(Material):
     """
     Material MenegottoPintoModel provides the constitutive model for steel.
 
@@ -37,7 +36,7 @@ class MenegottoPintoModel(object):
         To determine whether the stress state is beyond elastic region.
     """
 
-    def __init__(self, id, youngs_modulus, asymtopic_modulus, yield_stress, R0, a1, a2):
+    def __init__(self, youngs_modulus, asymtopic_modulus, yield_stress, R0, a1, a2):
         """
         Create a new material.
 
@@ -51,8 +50,6 @@ class MenegottoPintoModel(object):
 
         yield_stress : float
         """
-
-        self.id = id
         self.youngs_modulus = youngs_modulus
         self.asymtopic_modulus = asymtopic_modulus
         self.yield_stress = yield_stress
@@ -278,9 +275,6 @@ class MenegottoPintoModel(object):
     '''
     other:
     '''
-    def get_material_id(self):
-
-        return self.id
 
     def get_material_PEEQ(self):
 

@@ -6,7 +6,8 @@ Module fe_code
 import sys
 
 from .structure import Structure
-from .node import Node
+from .kent_park_model import KentParkModel
+from .menegotto_pinto_model import MenegottoPintoModel
 
 if sys.version_info < (3, 6):
     raise RuntimeError("The fiber beam-column module requires at least Python 3.6!")
