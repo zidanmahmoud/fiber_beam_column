@@ -1,3 +1,5 @@
+import numpy as np
+
 from .fiber import Fiber
 
 class Section:
@@ -23,3 +25,10 @@ class Section:
         for fiber in self.fibers:
             fiber.initialize()
         # stiffness matrix
+
+    def calculate_stiffness_matrix(self):
+        stiffness_matrix = np.zeros((3, 3))
+        for fiber in self.fibers:
+            EA = fiber.tangent_stiffness * fiber.area
+            stiffness_matrix += EA * np.outer(fiber.direction, fiber.direction)
+        return stiffness_matrix

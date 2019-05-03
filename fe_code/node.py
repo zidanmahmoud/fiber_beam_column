@@ -30,7 +30,7 @@ class Node(object):
         Displacement in z direction.
     """
 
-    def __init__(self, x, y, z):
+    def __init__(self, node_id, x, y, z):
         """Create a new node.
 
         Parameters
@@ -42,12 +42,17 @@ class Node(object):
         z : float
             Initial Z coordinate of the node.
         """
+        self._id = node_id
         self._x = x
         self._y = y
         self._z = z
         self.reference_x = x
         self.reference_y = y
         self.reference_z = z
+
+    @property
+    def id(self):
+        return self._id
 
     @property
     def u(self):

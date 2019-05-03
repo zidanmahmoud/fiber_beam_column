@@ -23,12 +23,16 @@ def main():
     steel_material = fe_code.MenegottoPintoModel(29000, 0.0042*29000, 60, 20, 18.5, 0.0002)
 
     fiber_area = (width/no_fibers_y) * (height/no_fibers_z)
+    y_st = width/2*(1/no_fibers_y - 1)
+    z_st = height/2*(1/no_fibers_z - 1)
     for section in stru.get_element(1).sections:
         counter = 1
         for i in range(no_fibers_y):
-            y = width/no_fibers_y * (i + 0.5)
+            # y = width/no_fibers_y * (i + 0.5)
+            y = y_st + width/no_fibers_y*i
             for j in range(no_fibers_z):
-                z = height/no_fibers_z * (j + 0.5)
+                z = z_st + height/no_fibers_z*j
+                # z = height/no_fibers_z * (j + 0.5)
                 if i in (1, 13) and j in (1, 13):
                     section.add_fiber(counter, y, z, fiber_area, steel_material)
                 else:
@@ -39,12 +43,14 @@ def main():
     for section in stru.get_element(1).sections:
         section.tolerance = 0.05
 
-    stru.add_dirichlet_condition(1, "uvwxyz", 0.05)
-    stru.add_dirichlet_condition(2, "w", 0.04)
+    stru.add_dirichlet_condition(1, "uvwxyz", 0)
+    stru.add_dirichlet_condition(2, "w", 0.005)
     stru.add_dirichlet_condition(2, "x", 0)
 
     # stru.initialize()
-    # stru.calculate_stiffness_matrix()
+
+    for k in range(1, 10+1+1):
+        stru.solve_displacement_control()
 
 
 if __name__ == "__main__":
