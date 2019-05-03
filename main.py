@@ -49,7 +49,8 @@ def main():
 
     # stru.initialize()
 
-    for k in range(1, 10+1+1):
+    for k in range(1, 10+1):
+        print(f"LOAD STEP : {k}")
         stru.solve_displacement_control()
 
 

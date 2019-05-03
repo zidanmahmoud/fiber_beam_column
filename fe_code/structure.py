@@ -20,6 +20,8 @@ class Structure:
         self._newmann_conditions = dict()
         self._tolerance = 1e-7
 
+        self._stiffness = None
+
     @property
     def tolerance(self):
         return self._tolerance
@@ -44,10 +46,14 @@ class Structure:
 
     def index_from_dof(self, dof):
         node_id, dof_type = dof
-        return 3*(node_id - 1) + DOF_INDEX_MAP[dof_type]
+        return 6*(node_id - 1) + DOF_INDEX_MAP[dof_type]
 
     def dof_from_index(self, index):
         raise NotImplementedError
+
+    @property
+    def no_dofs(self):
+        return len(self._nodes) * 6
 
 
     def add_node(self, node_id, x_pos, y_pos, z_pos):
@@ -71,17 +77,30 @@ class Structure:
             element.initialize()
         # self.calculate_stiffness_matrix()
 
+    @property
+    def tangent_stiffness(self):
+        """ Last NR iterations """
+        return self._stiffness
+
+    @tangent_stiffness.setter
+    def tangent_stiffness(self, value):
+        if isinstance(value, np.ndarray):
+            if value.shape == (self.no_dofs, self.no_dofs):
+                self._stiffness = value
+            else:
+                raise ValueError("Structure stiffness is of wrong shape.")
+        else:
+            raise ValueError("Structure stiffness must be a numpy.ndarray")
+
     def calculate_stiffness_matrix(self):
-        dof_per_node = 6
-        no_dofs = len(self.nodes)*dof_per_node
-        stiffness_matrix = np.zeros((no_dofs, no_dofs))
+        stiffness_matrix = np.zeros((self.no_dofs, self.no_dofs))
 
         for element in self.elements:
             k_e = element.calculate_global_stiffness_matrix()
-            i = np.array([self.index_from_dof(dof) for dof in element.dofs], dtype=int)
+            i = [self.index_from_dof(dof) for dof in element.dofs]
             stiffness_matrix[np.ix_(i, i)] = k_e
 
-        return k_e
+        self.tangent_stiffness = stiffness_matrix
 
     def solve_displacement_control(self):
         pass
