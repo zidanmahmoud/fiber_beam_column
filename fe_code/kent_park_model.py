@@ -154,7 +154,7 @@ class KentParkModel(Material):
 
         self.material_strain = 0.
 
-    def update_material_strain(self, print_):
+    def update_material_strain(self):
 
         self.material_strain = self.material_strain_last_loadstep + self.material_strain_incr
 
@@ -238,7 +238,7 @@ class KentParkModel(Material):
          cosi
 
     '''
-    def update_model_parameters(self, nz, print_):
+    def update_model_parameters(self, nz):
 
         if self.material_strain < 0:
             self.epr = self.material_strain_last_loadstep
@@ -268,23 +268,13 @@ class KentParkModel(Material):
     functions which are needed in the first block.
     '''
 ################################################################################
-    def check_reversal(self, do_reversal, j, print_, nx,ny,nz):
+    def check_reversal(self, do_reversal, j, nx, ny, nz):
         print_ = False
 
         if do_reversal and (j == 1):
             reversal = True
         else:
             reversal = False
-
-        if print_:
-            if nx == -1.0 and ny == 0 and nz == 0:
-                print('hand check')
-                print('last_loadstep_material_strain_incr = ', self.last_loadstep_material_strain_incr)
-                print('material_strain_incr = ', self.material_strain_incr)
-                print('material_strain = ', self.material_strain)
-                print(reversal)
-
-
 
         return reversal
 

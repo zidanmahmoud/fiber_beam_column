@@ -1,3 +1,9 @@
+"""
+fiber_beam
+==========
+
+Module contains the fiber beam element class
+"""
 import numpy as np
 
 from .element import Element
@@ -8,6 +14,14 @@ class FiberBeam(Element):
     def __init__(self, node1, node2):
         self._nodes = [node1, node2]
         self._sections = dict()
+
+        self.chng_disp_incr = None
+        self.chng_force_increment = None
+        self._displacement_increment = None
+        self._force_increment = None
+        self.converged_resisting_forces = np.zeros(5)
+        self.resisting_forces = np.zeros(5)
+        # self._displacement_residual = None
 
     @property
     def nodes(self):
@@ -50,6 +64,9 @@ class FiberBeam(Element):
             b_matrix = _calculate_b_matrix(points[i])
             local_flexibility_matrix += reference_length / 2 * weights[i] * (b_matrix.T @ section_flexibility_matrix @ b_matrix)
 
+            section.position = points[i]
+            section.weight = weights[i]
+
         return np.linalg.inv(local_flexibility_matrix)
 
     def _calculate_transform_matrix(self):
@@ -74,6 +91,76 @@ class FiberBeam(Element):
         reference_transform_matrix[9:12, 3] = e_2
 
         return reference_transform_matrix
+
+
+    @property
+    def displacement_increment(self):
+        if self._displacement_increment is None:
+            return np.zeros(5)
+        return self._displacement_increment
+    @displacement_increment.setter
+    def displacement_increment(self, value):
+        self._displacement_increment = value
+
+    @property
+    def force_increment(self):
+        if self._force_increment is None:
+            return np.zeros(5)
+        return self._force_increment
+    @force_increment.setter
+    def force_increment(self, value):
+        self._force_increment = value
+
+    @property
+    def l_e(self):
+        return self._calculate_transform_matrix()
+
+    # @property
+    # def displacement_residual(self):
+    #     if self._displacement_residual is None:
+    #         return np.zeros(5)
+    #     return self._displacement_residual
+    # @displacement_residual.setter
+    # def displacement_residual(self, value):
+    #     self._displacement_residual = value
+
+    def calculate_displacement_increment_from_structure(self, str_chng_disp_incr):
+        l_e = self._calculate_transform_matrix()
+        self.chng_disp_incr = l_e.T @ str_chng_disp_incr
+        self.displacement_increment += self.chng_disp_incr
+
+    def calculate_force_increment(self):
+        """ steps 6 & 7 """
+        k_e = self._calculate_local_stiffness_matrix()
+        self.chng_force_increment = k_e @ self.chng_disp_incr
+        self.force_increment += self.chng_force_increment
+
+    def increment_resisting_forces(self):
+        """ step 7 """
+        self.resisting_forces = self.converged_resisting_forces + self.force_increment
+
+    def update_stiffness(self):
+        for section in self.sections:
+            section.calculate_force_increment_from_element(
+                self.chng_force_increment
+            )
+            section.increment_section_forces()
+            section.calculate_deformation_increment()
+            section.calculate_fiber_deformation_increment()
+
+    def check_convergence(self):
+        conv = True
+        for section in self.sections:
+            conv += section.check_convergence()
+        return conv
+
+    def update_chng_displacement_increment(self):
+        residual = np.zeros(12)
+        for section in self.sections:
+            residual += section.weight * _calculate_b_matrix(section.position @ section.residual)
+        self.chng_disp_incr = -1 * residual
+
+
 
 def _calculate_b_matrix(gauss_point):
     b_matrix = np.zeros([3, 5])

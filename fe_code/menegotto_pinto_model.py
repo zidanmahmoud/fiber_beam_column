@@ -147,7 +147,7 @@ class MenegottoPintoModel(Material):
 
         self.material_strain = 0.
 
-    def update_material_strain(self, print_):
+    def update_material_strain(self):
 
         # if print_:
         #     print('update_material_strain called')
@@ -237,7 +237,7 @@ class MenegottoPintoModel(Material):
          cosi
 
     '''
-    def update_model_parameters(self, nz, print_):
+    def update_model_parameters(self, nz):
 
         E = self.youngs_modulus
         b = self.b
@@ -256,7 +256,7 @@ class MenegottoPintoModel(Material):
             self.sg0 = b*E*self.ep0 + self.direction*self.yield_stress*(1-b)
             self.update_material_cosi()
             self.R = self.R0 - self.a1*self.cosi /(self.a2 + self.cosi)
-            print_ = False
+            # print_ = False
             # if print_:
             #     print('cosi= ', self.cosi)
             #     print('R= ', self.R)
@@ -287,7 +287,7 @@ class MenegottoPintoModel(Material):
     functions which are needed in the first block.
     '''
 ################################################################################
-    def check_reversal(self, do_reversal, j, print_, nx,ny,nz):
+    def check_reversal(self, do_reversal, j, nx, ny, nz):
 
         print_ = False
 
@@ -295,13 +295,6 @@ class MenegottoPintoModel(Material):
             reversal = True
         else:
             reversal = False
-        if print_:
-            if nx == -1.0 and ny == 1 and nz == 1:
-                print('hand check')
-                print('last_loadstep_material_strain_incr = ', self.last_loadstep_material_strain_incr)
-                print('material_strain_incr = ', self.material_strain_incr)
-                print('material_strain = ', self.material_strain)
-                print(reversal)
 
 
         #if True:

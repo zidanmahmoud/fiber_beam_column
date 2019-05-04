@@ -43,15 +43,38 @@ def main():
     for section in stru.get_element(1).sections:
         section.tolerance = 0.05
 
+    controled_dof = (2, "w")
+    stru.add_neumann_condition(controled_dof[0], controled_dof[1], 1)
     stru.add_dirichlet_condition(1, "uvwxyz", 0)
-    stru.add_dirichlet_condition(2, "w", 0.005)
+    # stru.add_dirichlet_condition(2, "w", 0.005)
     stru.add_dirichlet_condition(2, "x", 0)
 
     # stru.initialize()
 
+    max_nr_iterations = 100
+    max_ele_iterations = 100
+    # f_vector = []
+
     for k in range(1, 10+1):
-        print(f"LOAD STEP : {k}")
-        stru.solve_displacement_control()
+        print(f"\nLOAD STEP : {k}")
+
+        conv = True
+        for i in range(1, max_nr_iterations+1):
+            stru.solve(max_ele_iterations)
+            conv += stru.check_nr_convergence()
+            if conv:
+                print(f"NR converged with {i} iteration(s).")
+                break
+            if i == max_nr_iterations:
+                print("WARNING: NewtonRaphson DID NOT", end=" ")
+                print(f"CONVERGE WITH {max_nr_iterations} ITERATIONS")
+
+        # f_vector.append(stru._calculate_force_vector()[stru.index_from_dof((2, "w"))])
+        stru.load_factor += 0.5
+
+    # import matplotlib.pyplot as plt
+    # plt.plot(f_vector)
+    # plt.show()
 
 
 if __name__ == "__main__":

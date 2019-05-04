@@ -20,7 +20,11 @@ class Structure:
         self._newmann_conditions = dict()
         self._tolerance = 1e-7
 
+        self.load_factor = 0
+
         self._stiffness = None
+        self._unbalanced_forces = None
+        self._displacement_increment = None
 
     @property
     def tolerance(self):
@@ -92,7 +96,17 @@ class Structure:
         else:
             raise ValueError("Structure stiffness must be a numpy.ndarray")
 
-    def calculate_stiffness_matrix(self):
+    @property
+    def displacement_increment(self):
+        if self._displacement_increment is None:
+            return np.zeros(self.no_dofs)
+        return self._displacement_increment
+
+    @displacement_increment.setter
+    def displacement_increment(self, value):
+        self._displacement_increment = value
+
+    def _calculate_stiffness_matrix(self):
         stiffness_matrix = np.zeros((self.no_dofs, self.no_dofs))
 
         for element in self.elements:
@@ -102,6 +116,72 @@ class Structure:
 
         self.tangent_stiffness = stiffness_matrix
 
-    def solve_displacement_control(self):
-        pass
+    def _calculate_force_vector(self):
+        forces = np.zeros(self.no_dofs)
+        for condition in self._newmann_conditions.items():
+            dof, value = condition
+            forces[self.index_from_dof(dof)] += self.load_factor * value
+        return forces
 
+    def _construct_unbalance_forces_first_iteration(self):
+        self._unbalanced_forces = np.zeros(self.no_dofs)
+        for condition in self._newmann_conditions.items():
+            dof, value = condition
+            self._unbalanced_forces[self.index_from_dof(dof)] += value
+
+    def solve(self, max_ele_iterations):
+        if self._unbalanced_forces is None: #First NR iteration
+            self._construct_unbalance_forces_first_iteration()
+
+        self._calculate_stiffness_matrix()
+
+        for condition in self._dirichlet_conditions.items():
+            dof, value = condition
+            i = self.index_from_dof(dof)
+            self.tangent_stiffness[:, i] = 0
+            self.tangent_stiffness[i, :] = 0
+            self.tangent_stiffness[i, i] = 1
+            self._unbalanced_forces[i] = value
+
+        change_in_displacement_increment = np.linalg.solve(
+            self.tangent_stiffness, self._unbalanced_forces
+        )
+        self.displacement_increment += change_in_displacement_increment
+
+        for element in self.elements:
+            indices = [self.index_from_dof(dof) for dof in element.dofs]
+            element.calculate_displacement_increment_from_structure(
+                change_in_displacement_increment[indices]
+            )
+
+        conv = True
+        for j in range(1, max_ele_iterations+1):
+            for element in self.elements:
+                element.calculate_force_increment()
+                element.increment_resisting_forces()
+                element.update_stiffness()
+
+            for element in self.elements:
+                conv += element.check_convergence()
+
+            if conv:
+                print(f"Elements have converged with {j} iteration(s).")
+                break
+
+            for element in self.elements:
+                element.update_chng_displacement_increment()
+
+            if j == max_ele_iterations:
+                print(f"WARNING: ELEMENTS DID NOT CONVERGE WITH {max_ele_iterations} ITERATIONS")
+
+    def check_nr_convergence(self):
+        resisting_forces = np.zeros(self.no_dofs)
+        for element in self.elements:
+            f_e = element.l_e @ element.resisting_forces
+            i = [self.index_from_dof(dof) for dof in element.dofs]
+            # stiffness_matrix[np.ix_(i, i)] = k_e
+            resisting_forces[i] += f_e
+
+        external_forces = self._calculate_force_vector()
+        self._unbalanced_forces = external_forces - resisting_forces
+        return abs(np.linalg.norm(self._unbalanced_forces)) < self._tolerance
