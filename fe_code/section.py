@@ -1,8 +1,15 @@
+"""
+Section
+"""
 import numpy as np
 
 from .fiber import Fiber
 
 class Section:
+    """ Section class
+    Attributes
+    ----------
+    """
     def __init__(self):
         self._fibers = dict()
         self._tolerance = 1e-7
@@ -18,6 +25,7 @@ class Section:
 
     @property
     def tolerance(self):
+        """N-R iterations tolerance"""
         return self._tolerance
 
     @tolerance.setter
@@ -26,18 +34,26 @@ class Section:
 
     @property
     def fibers(self):
+        """fibers list"""
         return self._fibers.values()
 
     def add_fiber(self, fiber_id, y, z, area, material_class):
+        """add a fiber to the section
+
+        Parameters
+        ----------
+        """
         self._fibers[fiber_id] = Fiber(y, z, area, material_class)
 
     def initialize(self):
+        """probably unnecessary"""
         for fiber in self.fibers:
             fiber.initialize()
         # stiffness matrix
 
     @property
     def force_increment(self):
+        """force increment vector"""
         if self._force_increment is None:
             return np.zeros(3)
         return self._force_increment
@@ -47,6 +63,7 @@ class Section:
 
     @property
     def deformation_increment(self):
+        """deformation_increment vector"""
         if self._deformation_increment is None:
             return np.zeros(3)
         return self._deformation_increment
@@ -56,6 +73,12 @@ class Section:
 
 
     def calculate_stiffness_matrix(self):
+        """section stiffness matrix
+
+        Returns
+        -------
+        stiffness_matrix : ndarray(3x3)
+        """
         stiffness_matrix = np.zeros((3, 3))
         for fiber in self.fibers:
             EA = fiber.tangent_stiffness * fiber.area

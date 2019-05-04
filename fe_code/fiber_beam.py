@@ -149,15 +149,15 @@ class FiberBeam(Element):
             section.calculate_fiber_deformation_increment()
 
     def check_convergence(self):
-        conv = True
         for section in self.sections:
-            conv += section.check_convergence()
-        return conv
+            if not section.check_convergence():
+                return False
+        return True
 
     def update_chng_displacement_increment(self):
-        residual = np.zeros(12)
+        residual = np.zeros(5)
         for section in self.sections:
-            residual += section.weight * _calculate_b_matrix(section.position @ section.residual)
+            residual += section.weight * _calculate_b_matrix(section.position).T @ section.residual
         self.chng_disp_incr = -1 * residual
 
 

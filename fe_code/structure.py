@@ -3,6 +3,12 @@ import numpy as np
 from .node import Node
 from .fiber_beam import FiberBeam
 
+def debug(message, *args, **kwargs):
+    print(message, *args, **kwargs)
+
+def warning(message, *args, **kwargs):
+    print('\33[93m'+"WARNING: "+message.upper()+'\33[0m', *args, **kwargs)
+
 DOF_INDEX_MAP = {
     "u": 0,
     "v": 1,
@@ -154,7 +160,7 @@ class Structure:
                 change_in_displacement_increment[indices]
             )
 
-        conv = True
+        conv = False
         for j in range(1, max_ele_iterations+1):
             for element in self.elements:
                 element.calculate_force_increment()
@@ -165,14 +171,14 @@ class Structure:
                 conv += element.check_convergence()
 
             if conv:
-                print(f"Elements have converged with {j} iteration(s).")
+                debug(f"Elements have converged with {j} iteration(s).")
                 break
 
             for element in self.elements:
                 element.update_chng_displacement_increment()
 
             if j == max_ele_iterations:
-                print(f"WARNING: ELEMENTS DID NOT CONVERGE WITH {max_ele_iterations} ITERATIONS")
+                warning(f"ELEMENTS DID NOT CONVERGE WITH {max_ele_iterations} ITERATIONS")
 
     def check_nr_convergence(self):
         resisting_forces = np.zeros(self.no_dofs)
