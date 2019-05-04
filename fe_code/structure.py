@@ -136,6 +136,9 @@ class Structure:
             self._unbalanced_forces[self.index_from_dof(dof)] += value
 
     def solve(self, max_ele_iterations):
+        """
+        main solution loop until element convergence
+        """
         if self._unbalanced_forces is None: #First NR iteration
             self._construct_unbalance_forces_first_iteration()
 
