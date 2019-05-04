@@ -5,7 +5,7 @@ A stand-alone object oriented Python code to model a fiber beam-column reinforce
 ---
 
 ### Requirements
-- Python 3.6.X with the packages numpy, scipy, and matplotlib
+- Python 3.6.x with the packages numpy, scipy, and matplotlib
 
 
 ### Run
