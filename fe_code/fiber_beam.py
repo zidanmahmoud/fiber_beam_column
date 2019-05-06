@@ -64,6 +64,7 @@ class FiberBeam(Element):
             b_matrix = _calculate_b_matrix(points[i])
             local_flexibility_matrix += reference_length / 2 * weights[i] * (b_matrix.T @ section_flexibility_matrix @ b_matrix)
 
+            # TODO: save position & weight in initialize step!
             section.position = points[i]
             section.weight = weights[i]
 

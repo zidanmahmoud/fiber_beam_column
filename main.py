@@ -61,8 +61,8 @@ def main():
     controled_dof = (2, "w")
     stru.add_neumann_condition(controled_dof[0], controled_dof[1], 1)
     stru.add_dirichlet_condition(1, "uvwxyz", 0)
-    # stru.add_dirichlet_condition(2, "w", 0.005)
     stru.add_dirichlet_condition(2, "x", 0)
+    # stru.add_dirichlet_condition(2, "w", 0.005)
 
     max_nr_iterations = 100
     max_ele_iterations = 100
@@ -71,6 +71,7 @@ def main():
         debug(f"\nLOAD STEP : {k}")
 
         for i in range(1, max_nr_iterations+1):
+
             stru.solve(max_ele_iterations)
             if stru.check_nr_convergence():
                 debug(f"NR converged with {i} iteration(s).")
