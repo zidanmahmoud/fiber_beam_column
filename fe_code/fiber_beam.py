@@ -160,6 +160,10 @@ class FiberBeam(Element):
             residual += section.weight * _calculate_b_matrix(section.position).T @ section.residual
         self.chng_disp_incr = -1 * residual
 
+    def save_nr_iteration(self):
+        self.converged_resisting_forces = self.resisting_forces
+        for section in self.sections:
+            section.save_nr_iteration()
 
 
 def _calculate_b_matrix(gauss_point):

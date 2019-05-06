@@ -57,3 +57,6 @@ class Fiber:
 
     def calculate_stress(self):
         self.stress = self._material_class.get_material_stress()
+
+    def save_nr_iteration(self):
+        self.converged_strain = self.strain

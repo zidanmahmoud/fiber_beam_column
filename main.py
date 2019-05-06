@@ -70,12 +70,11 @@ def main():
     for k in range(1, 10+1):
         debug(f"\nLOAD STEP : {k}")
 
-        conv = False
         for i in range(1, max_nr_iterations+1):
             stru.solve(max_ele_iterations)
-            conv += stru.check_nr_convergence()
-            if conv:
+            if stru.check_nr_convergence():
                 debug(f"NR converged with {i} iteration(s).")
+                stru.save_nr_iteration()
                 break
             if i == max_nr_iterations:
                 warning(f"Newton-Raphson did not converge {max_nr_iterations} iterations")

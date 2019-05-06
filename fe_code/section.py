@@ -117,6 +117,11 @@ class Section:
         self.residual = np.linalg.inv(self.calculate_stiffness_matrix()) @ (self.forces - resisting_forces)
         return abs(np.linalg.norm(self.forces - resisting_forces)) < self._tolerance
 
+    def save_nr_iteration(self):
+        self.converged_section_forces = self.forces
+        for fiber in self.fibers:
+            fiber.save_nr_iteration()
+
 
 
 def _calculate_b_matrix(gauss_point):

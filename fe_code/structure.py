@@ -194,3 +194,7 @@ class Structure:
         external_forces = self._calculate_force_vector()
         self._unbalanced_forces = external_forces - resisting_forces
         return abs(np.linalg.norm(self._unbalanced_forces)) < self._tolerance
+
+    def save_nr_iteration(self):
+        for element in self.elements:
+            element.save_nr_iteration()
