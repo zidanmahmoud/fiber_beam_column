@@ -125,9 +125,10 @@ class FiberBeam(Element):
     # def displacement_residual(self, value):
     #     self._displacement_residual = value
 
-    def calculate_displacement_increment_from_structure(self, str_chng_disp_incr):
+    def calculate_displacement_increment_from_structure(self, structure_chng_disp_incr):
+        """step 4"""
         l_e = self._calculate_transform_matrix()
-        self.chng_disp_incr = l_e.T @ str_chng_disp_incr
+        self.chng_disp_incr = l_e.T @ structure_chng_disp_incr
         self.displacement_increment += self.chng_disp_incr
 
     def calculate_force_increment(self):
@@ -141,6 +142,7 @@ class FiberBeam(Element):
         self.resisting_forces = self.converged_resisting_forces + self.force_increment
 
     def update_stiffness(self):
+        """ steps 8-12 """
         for section in self.sections:
             section.calculate_force_increment_from_element(
                 self.chng_force_increment
@@ -161,10 +163,12 @@ class FiberBeam(Element):
             residual += section.weight * _calculate_b_matrix(section.position).T @ section.residual
         self.chng_disp_incr = -1 * residual
 
-    def save_nr_iteration(self):
+    def finalize_load_step(self):
+        self._force_increment = None
+        self._displacement_increment = None
         self.converged_resisting_forces = self.resisting_forces
         for section in self.sections:
-            section.save_nr_iteration()
+            section.finalize_load_step()
 
 
 def _calculate_b_matrix(gauss_point):

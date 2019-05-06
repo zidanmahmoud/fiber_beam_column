@@ -31,6 +31,7 @@ class Structure:
         self._stiffness = None
         self._unbalanced_forces = None
         self._displacement_increment = None
+        self._displacement = None
 
     @property
     def tolerance(self):
@@ -107,10 +108,18 @@ class Structure:
         if self._displacement_increment is None:
             return np.zeros(self.no_dofs)
         return self._displacement_increment
-
     @displacement_increment.setter
     def displacement_increment(self, value):
         self._displacement_increment = value
+
+    @property
+    def current_displacement(self):
+        if self._displacement is None:
+            return np.zeros(self.no_dofs)
+        return self._displacement
+    @current_displacement.setter
+    def current_displacement(self, value):
+        self._displacement = value
 
     def _calculate_stiffness_matrix(self):
         stiffness_matrix = np.zeros((self.no_dofs, self.no_dofs))
@@ -166,26 +175,36 @@ class Structure:
         )
         self.displacement_increment += change_in_displacement_increment
 
+        # STEP 4
         for element in self.elements:
             indices = [self.index_from_dof(dof) for dof in element.dofs]
             element.calculate_displacement_increment_from_structure(
                 change_in_displacement_increment[indices]
             )
 
+        # STEP 5
         conv = 0
         for j in range(1, max_ele_iterations+1):
             for element in self.elements:
+                # STEP 6,7
                 element.calculate_force_increment()
                 element.increment_resisting_forces()
+                # STEP 8-12
                 element.update_stiffness()
 
+            # STEPS 13-15
             for element in self.elements:
                 conv += element.check_convergence()
 
+            # STEP 17
             if conv == len(self.elements): # all elements converged
+                for element in self.elements:
+                    for section in element.sections:
+                        section.residual = np.zeros(3)
                 debug(f"Elements have converged with {j} iteration(s).")
                 break
 
+            # ... BACK TO STEP 6
             for element in self.elements:
                 element.update_chng_displacement_increment()
 
@@ -193,17 +212,20 @@ class Structure:
                 warning(f"ELEMENTS DID NOT CONVERGE WITH {max_ele_iterations} ITERATIONS")
 
     def check_nr_convergence(self):
+        """ steps 18-20 """
         resisting_forces = np.zeros(self.no_dofs)
         for element in self.elements:
             f_e = element.l_e @ element.resisting_forces
             i = [self.index_from_dof(dof) for dof in element.dofs]
-            # stiffness_matrix[np.ix_(i, i)] = k_e
             resisting_forces[i] += f_e
 
         external_forces = self._calculate_force_vector()
         self._unbalanced_forces = external_forces - resisting_forces
         return abs(np.linalg.norm(self._unbalanced_forces)) < self._tolerance
 
-    def save_nr_iteration(self):
+    def finalize_load_step(self):
+        """ step 21 """
+        self.current_displacement += self.displacement_increment
+        self._displacement_increment = None
         for element in self.elements:
-            element.save_nr_iteration()
+            element.finalize_load_step()

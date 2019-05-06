@@ -92,6 +92,7 @@ class Section:
         self.force_increment += self.chng_force_increment
 
     def increment_section_forces(self):
+        """ step 8 """
         self.forces = self.converged_section_forces + self.force_increment
 
     def calculate_deformation_increment(self):
@@ -110,14 +111,17 @@ class Section:
             fiber.calculate_stress()
 
     def check_convergence(self):
-        """ steps 11 & 12 """
+        """ steps 13-15 """
         resisting_forces = np.zeros(3)
         for fiber in self.fibers:
             resisting_forces += fiber.stress * fiber.area * fiber.direction
-        self.residual = np.linalg.inv(self.calculate_stiffness_matrix()) @ (self.forces - resisting_forces)
+        flexibility = np.linalg.inv(self.calculate_stiffness_matrix())
+        self.residual = flexibility @ (self.forces - resisting_forces)
         return abs(np.linalg.norm(self.forces - resisting_forces)) < self._tolerance
 
     def save_nr_iteration(self):
+        self._force_increment = None
+        self._deformation_increment = None
         self.converged_section_forces = self.forces
         for fiber in self.fibers:
             fiber.save_nr_iteration()

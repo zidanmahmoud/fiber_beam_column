@@ -39,7 +39,7 @@ class Fiber:
         self._strain_increment = value
 
     def calculate_strain_increment_from_section(self, sec_chng_def_increment):
-        """ step 10 """
+        """ step 10 + 11 """
         self.chng_strain_increment = self.direction @ sec_chng_def_increment
         self.strain_increment += self.chng_strain_increment
 
@@ -56,7 +56,9 @@ class Fiber:
         self.strain = self.converged_strain + self.strain_increment
 
     def calculate_stress(self):
+        """ step 11 """
         self.stress = self._material_class.get_material_stress()
 
     def save_nr_iteration(self):
+        self._strain_increment = None
         self.converged_strain = self.strain

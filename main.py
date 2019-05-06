@@ -75,10 +75,11 @@ def main():
             stru.solve(max_ele_iterations)
             if stru.check_nr_convergence():
                 debug(f"NR converged with {i} iteration(s).")
-                stru.save_nr_iteration()
                 break
             if i == max_nr_iterations:
                 warning(f"Newton-Raphson did not converge {max_nr_iterations} iterations")
+
+        stru.finalize_load_step()
 
         stru.load_factor += 0.5
 
