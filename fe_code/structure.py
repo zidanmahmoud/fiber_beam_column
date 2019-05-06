@@ -26,7 +26,7 @@ class Structure:
         self._newmann_conditions = dict()
         self._tolerance = 1e-7
 
-        self.load_factor = 0
+        self.load_factor = 0.05
 
         self._stiffness = None
         self._unbalanced_forces = None
@@ -133,15 +133,24 @@ class Structure:
         self._unbalanced_forces = np.zeros(self.no_dofs)
         for condition in self._newmann_conditions.items():
             dof, value = condition
-            self._unbalanced_forces[self.index_from_dof(dof)] += value
+            self._unbalanced_forces[self.index_from_dof(dof)] += self.load_factor * value
 
     def solve(self, max_ele_iterations):
         """
         main solution loop until element convergence
+
+        steps 3-17
         """
+        # STEP 3
         if self._unbalanced_forces is None: #First NR iteration
             self._construct_unbalance_forces_first_iteration()
 
+        # FIXME: based on the thesis, the initial stiffness matrix
+        # must be calculated by imposing a very small deformation
+        # increment on the sections of all elements.
+        # for element in self.elements:
+        #     for section in element.sections:
+        #         section.deformation_increment = np.array([1e-5, 1e-5, 1e-5])
         self._calculate_stiffness_matrix()
 
         for condition in self._dirichlet_conditions.items():
@@ -163,7 +172,7 @@ class Structure:
                 change_in_displacement_increment[indices]
             )
 
-        conv = False
+        conv = 0
         for j in range(1, max_ele_iterations+1):
             for element in self.elements:
                 element.calculate_force_increment()
@@ -173,7 +182,7 @@ class Structure:
             for element in self.elements:
                 conv += element.check_convergence()
 
-            if conv:
+            if conv == len(self.elements): # all elements converged
                 debug(f"Elements have converged with {j} iteration(s).")
                 break
 
