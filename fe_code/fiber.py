@@ -14,7 +14,7 @@ class Fiber:
 
     @property
     def direction(self):
-        return np.array([self._y, self._z, 1.0])
+        return np.array([-self._y, self._z, 1.0])
 
     @property
     def area(self):
