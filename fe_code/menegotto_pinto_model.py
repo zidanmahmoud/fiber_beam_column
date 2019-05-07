@@ -108,7 +108,6 @@ class MenegottoPintoModel(Material):
         return self.last_loadstep_material_strain_incr
 
     def determin_direction(self, nz):
-        # Question: Why is it 1 & -1? It is called in Fiber.initialize_at_beginning(nz)
         if nz > 4:
             self.direction = -1
         elif nz <= 4:

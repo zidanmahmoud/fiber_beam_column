@@ -17,6 +17,8 @@ class Section:
         self.position = None
         self.weight = None
 
+        self.stiffness_matrix = np.zeros((3, 3))
+
         self._force_increment = None
         self._deformation_increment = None
         self.converged_section_forces = np.zeros(3)
@@ -37,19 +39,19 @@ class Section:
         """fibers list"""
         return self._fibers.values()
 
-    def add_fiber(self, fiber_id, y, z, area, material_class):
+    def add_fiber(self, fiber_id, y, z, ny, nz, area, material_class):
         """add a fiber to the section
 
         Parameters
         ----------
         """
-        self._fibers[fiber_id] = Fiber(y, z, area, material_class)
+        self._fibers[fiber_id] = Fiber(y, z, ny, nz, area, material_class)
 
     def initialize(self):
         """probably unnecessary"""
         for fiber in self.fibers:
             fiber.initialize()
-        # stiffness matrix
+        self.update_stiffness_matrix()
 
     @property
     def force_increment(self):
@@ -72,18 +74,13 @@ class Section:
         self._deformation_increment = value
 
 
-    def calculate_stiffness_matrix(self):
+    def update_stiffness_matrix(self):
         """section stiffness matrix
-
-        Returns
-        -------
-        stiffness_matrix : ndarray(3x3)
         """
-        stiffness_matrix = np.zeros((3, 3))
+        self.stiffness_matrix[:, :] = 0
         for fiber in self.fibers:
             EA = fiber.tangent_stiffness * fiber.area
-            stiffness_matrix += EA * np.outer(fiber.direction, fiber.direction)
-        return stiffness_matrix
+            self.stiffness_matrix += EA * np.outer(fiber.direction, fiber.direction)
 
     def calculate_force_increment_from_element(self, ele_chng_force_increment):
         """ step 8 """
@@ -97,7 +94,7 @@ class Section:
 
     def calculate_deformation_increment(self):
         """ step 9 """
-        f_e = np.linalg.inv(self.calculate_stiffness_matrix())
+        f_e = np.linalg.inv(self.stiffness_matrix)
         self.chng_def_increment = self.residual + f_e @ self.chng_force_increment
         self.deformation_increment += self.chng_def_increment
 
@@ -115,7 +112,7 @@ class Section:
         resisting_forces = np.zeros(3)
         for fiber in self.fibers:
             resisting_forces += fiber.stress * fiber.area * fiber.direction
-        flexibility = np.linalg.inv(self.calculate_stiffness_matrix())
+        flexibility = np.linalg.inv(self.stiffness_matrix)
         self.residual = flexibility @ (self.forces - resisting_forces)
         return abs(np.linalg.norm(self.forces - resisting_forces)) < self._tolerance
 

@@ -1,9 +1,11 @@
 import numpy as np
 
 class Fiber:
-    def __init__(self, y, z, area, material_class):
+    def __init__(self, y, z, ny, nz, area, material_class):
         self._y = y
         self._z = z
+        self._ny = ny
+        self._nz = nz
         self._area = area
         self._material_class = material_class
 
@@ -14,7 +16,7 @@ class Fiber:
 
     @property
     def direction(self):
-        return np.array([self._y, self._z, 1.0])
+        return np.array([-self._y, self._z, 1.0])
 
     @property
     def area(self):
@@ -25,8 +27,7 @@ class Fiber:
         return self._material_class.get_material_tangent_modulus()
 
     def initialize(self):
-        nz = 0
-        self._material_class.determin_direction(nz)
+        self._material_class.determin_direction(self._nz)
 
 
     @property
@@ -46,8 +47,8 @@ class Fiber:
         self._material_class.update_change_in_material_strain_incr(self.chng_strain_increment)
         self._material_class.update_material_strain_incr()
         self._material_class.update_material_strain()
-        if self._first_iteration: #FIXME: make it somethin from inside the material class.. maybe
-            self._material_class.update_model_parameters(nz=0)
+        if self._first_iteration: #FIXME: this should be a check reversal
+            self._material_class.update_model_parameters(self._nz)
         self._material_class.update_material_stress()
         self._material_class.update_material_tangent_modulus()
 
