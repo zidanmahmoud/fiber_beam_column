@@ -2,14 +2,7 @@ import numpy as np
 
 from .node import Node
 from .fiber_beam import FiberBeam
-
-
-def debug(message, *args, **kwargs):
-    print(message, *args, **kwargs)
-
-
-def warning(message, *args, **kwargs):
-    print("\33[93m" + "WARNING: " + message.upper() + "\33[0m", *args, **kwargs)
+from .io import debug, warning
 
 
 DOF_INDEX_MAP = {"u": 0, "v": 1, "w": 2, "x": 3, "y": 4, "z": 5}
@@ -162,13 +155,6 @@ class Structure:
         if self._unbalanced_forces is None:  # First NR iteration
             self._construct_unbalance_forces_first_iteration()
 
-        # FIXME: based on the thesis, the initial stiffness matrix
-        # must be calculated by imposing a very small deformation
-        # increment on the sections of all elements.
-        # for element in self.elements:
-        #     for section in element.sections:
-        #         section.deformation_increment = np.array([1e-5, 1e-5, 1e-5])
-
         dofs = self.no_dofs
         lhs = np.zeros((dofs + 1, dofs + 1))
         lhs[:dofs, :dofs] = self.tangent_stiffness
@@ -186,17 +172,15 @@ class Structure:
             lhs[i, i] = 1
 
         change_in_increments = np.linalg.solve(lhs, rhs)
-        change_in_displacement_increment = change_in_increments[:dofs]
-        change_in_load_factor_increment = change_in_increments[-1]
-        self.displacement_increment += change_in_displacement_increment
-        self._load_factor_increment += change_in_load_factor_increment
+        self.displacement_increment += change_in_increments[:dofs]
+        self._load_factor_increment += change_in_increments[-1]
         self._load_factor += self._load_factor_increment
 
         # STEP 4
         for element in self.elements:
             indices = [self.index_from_dof(dof) for dof in element.dofs]
             element.calculate_displacement_increment_from_structure(
-                change_in_displacement_increment[indices]
+                change_in_increments[:dofs][indices]
             )
 
         # STEP 5

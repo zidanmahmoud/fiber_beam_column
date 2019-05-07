@@ -281,7 +281,7 @@ class KentParkModel(Material):
         if do_reversal and (j == 1):
             reversal = True
         else:
-            reversal = Fals
+            reversal = False
 
         return reversal
 
