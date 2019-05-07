@@ -3,20 +3,17 @@ import numpy as np
 from .node import Node
 from .fiber_beam import FiberBeam
 
+
 def debug(message, *args, **kwargs):
     print(message, *args, **kwargs)
 
-def warning(message, *args, **kwargs):
-    print('\33[93m'+"WARNING: "+message.upper()+'\33[0m', *args, **kwargs)
 
-DOF_INDEX_MAP = {
-    "u": 0,
-    "v": 1,
-    "w": 2,
-    "x": 3,
-    "y": 4,
-    "z": 5,
-}
+def warning(message, *args, **kwargs):
+    print("\33[93m" + "WARNING: " + message.upper() + "\33[0m", *args, **kwargs)
+
+
+DOF_INDEX_MAP = {"u": 0, "v": 1, "w": 2, "x": 3, "y": 4, "z": 5}
+
 
 class Structure:
     def __init__(self):
@@ -38,6 +35,7 @@ class Structure:
     @property
     def tolerance(self):
         return self._tolerance
+
     @tolerance.setter
     def tolerance(self, value):
         self._tolerance = value
@@ -56,10 +54,9 @@ class Structure:
     def get_element(self, element_id):
         return self._elements[element_id]
 
-
     def index_from_dof(self, dof):
         node_id, dof_type = dof
-        return 6*(node_id - 1) + DOF_INDEX_MAP[dof_type]
+        return 6 * (node_id - 1) + DOF_INDEX_MAP[dof_type]
 
     def dof_from_index(self, index):
         raise NotImplementedError
@@ -67,7 +64,6 @@ class Structure:
     @property
     def no_dofs(self):
         return len(self._nodes) * 6
-
 
     def add_node(self, node_id, x_pos, y_pos, z_pos):
         self._nodes[node_id] = Node(node_id, x_pos, y_pos, z_pos)
@@ -110,6 +106,7 @@ class Structure:
         if self._displacement_increment is None:
             return np.zeros(self.no_dofs)
         return self._displacement_increment
+
     @displacement_increment.setter
     def displacement_increment(self, value):
         self._displacement_increment = value
@@ -119,6 +116,7 @@ class Structure:
         if self._displacement is None:
             return np.zeros(self.no_dofs)
         return self._displacement
+
     @current_displacement.setter
     def current_displacement(self, value):
         self._displacement = value
@@ -161,7 +159,7 @@ class Structure:
         steps 3-17
         """
         # STEP 3
-        if self._unbalanced_forces is None: #First NR iteration
+        if self._unbalanced_forces is None:  # First NR iteration
             self._construct_unbalance_forces_first_iteration()
 
         # FIXME: based on the thesis, the initial stiffness matrix
@@ -172,11 +170,11 @@ class Structure:
         #         section.deformation_increment = np.array([1e-5, 1e-5, 1e-5])
 
         dofs = self.no_dofs
-        lhs = np.zeros((dofs+1, dofs+1))
+        lhs = np.zeros((dofs + 1, dofs + 1))
         lhs[:dofs, :dofs] = self.tangent_stiffness
-        lhs[:dofs, -1] = - self.force_vector
-        lhs[-1, :dofs] = - self.force_vector
-        rhs = np.zeros(dofs+1)
+        lhs[:dofs, -1] = -self.force_vector
+        lhs[-1, :dofs] = -self.force_vector
+        rhs = np.zeros(dofs + 1)
         rhs[:dofs] = self._unbalanced_forces
         rhs[-1] = self.force_vector @ self.displacement_increment - self.length_increment
 
@@ -202,7 +200,7 @@ class Structure:
             )
 
         # STEP 5
-        for j in range(1, max_ele_iterations+1):
+        for j in range(1, max_ele_iterations + 1):
             for element in self.elements:
                 # STEP 6 & 7
                 element.calculate_force_increment()
@@ -216,7 +214,7 @@ class Structure:
                 conv *= element.check_convergence()
 
             # STEP 17
-            if conv: # all elements converged
+            if conv:  # all elements converged
                 for element in self.elements:
                     for section in element.sections:
                         section.residual = np.zeros(3)

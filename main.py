@@ -50,14 +50,11 @@ def main():
                 if i in (1, 13) and j in (1, 13):
                     section.add_fiber(
                         counter, y, z, i, j, fiber_area,
-                        fe_code.MenegottoPintoModel(
-                            29000, 0.0042 * 29000, 60, 20, 18.5, 0.0002
-                        ),
+                        fe_code.MenegottoPintoModel(29000, 0.0042 * 29000, 60, 20, 18.5, 0.0002),
                     )
                 else:
                     section.add_fiber(
-                        counter, y, z, i, j, fiber_area,
-                        fe_code.KentParkModel(6.95, 1, -0.07, 770),
+                        counter, y, z, i, j, fiber_area, fe_code.KentParkModel(6.95, 1, -0.07, 770)
                     )
                 counter += 1
 
@@ -88,9 +85,7 @@ def main():
                 debug(f"NR converged with {i} iteration(s).")
                 break
             if i == max_nr_iterations:
-                warning(
-                    f"Newton-Raphson did not converge {max_nr_iterations} iterations"
-                )
+                warning(f"Newton-Raphson did not converge {max_nr_iterations} iterations")
 
         stru.finalize_load_step()
 

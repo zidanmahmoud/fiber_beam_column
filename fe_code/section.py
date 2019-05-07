@@ -5,11 +5,13 @@ import numpy as np
 
 from .fiber import Fiber
 
+
 class Section:
     """ Section class
     Attributes
     ----------
     """
+
     def __init__(self):
         self._fibers = dict()
         self._tolerance = 1e-7
@@ -59,6 +61,7 @@ class Section:
         if self._force_increment is None:
             return np.zeros(3)
         return self._force_increment
+
     @force_increment.setter
     def force_increment(self, value):
         self._force_increment = value
@@ -69,10 +72,10 @@ class Section:
         if self._deformation_increment is None:
             return np.zeros(3)
         return self._deformation_increment
+
     @deformation_increment.setter
     def deformation_increment(self, value):
         self._deformation_increment = value
-
 
     def update_stiffness_matrix(self):
         """section stiffness matrix
@@ -101,9 +104,7 @@ class Section:
     def calculate_fiber_deformation_increment(self):
         """ step 10 """
         for fiber in self.fibers:
-            fiber.calculate_strain_increment_from_section(
-                self.chng_def_increment
-            )
+            fiber.calculate_strain_increment_from_section(self.chng_def_increment)
             fiber.increment_strain()
             fiber.calculate_stress()
 
@@ -124,12 +125,11 @@ class Section:
             fiber.save_nr_iteration()
 
 
-
 def _calculate_b_matrix(gauss_point):
     b_matrix = np.zeros([3, 5])
-    b_matrix[0, 0] = gauss_point / 2 - 1/2
-    b_matrix[0, 1] = gauss_point / 2 + 1/2
-    b_matrix[1, 2] = gauss_point / 2 - 1/2
-    b_matrix[1, 3] = gauss_point / 2 + 1/2
+    b_matrix[0, 0] = gauss_point / 2 - 1 / 2
+    b_matrix[0, 1] = gauss_point / 2 + 1 / 2
+    b_matrix[1, 2] = gauss_point / 2 - 1 / 2
+    b_matrix[1, 3] = gauss_point / 2 + 1 / 2
     b_matrix[2, 4] = 1
     return b_matrix

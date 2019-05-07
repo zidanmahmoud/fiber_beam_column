@@ -41,8 +41,7 @@ class FiberBeam(Element):
 
     def add_section(self, section_id):
         if section_id in self._sections:
-            raise RuntimeError(
-                f"Structure has already a section with id {section_id}")
+            raise RuntimeError(f"Structure has already a section with id {section_id}")
         self._sections[section_id] = Section()
 
     def initialize(self):
@@ -61,22 +60,27 @@ class FiberBeam(Element):
     def update_local_stiffness_matrix(self):
         local_flexibility_matrix = np.zeros((5, 5))
 
-        reference_local_vector = self.nodes[1].get_reference_location(
-        ) - self.nodes[0].get_reference_location()
+        reference_local_vector = (
+            self.nodes[1].get_reference_location() - self.nodes[0].get_reference_location()
+        )
         reference_length = np.linalg.norm(reference_local_vector)
 
         for section in self.sections:
-            section_flexibility_matrix = np.linalg.inv(
-                section.stiffness_matrix)
+            section_flexibility_matrix = np.linalg.inv(section.stiffness_matrix)
             b_matrix = _calculate_b_matrix(section.position)
-            local_flexibility_matrix += reference_length / 2 * section.weight * \
-                (b_matrix.T @ section_flexibility_matrix @ b_matrix)
+            local_flexibility_matrix += (
+                reference_length
+                / 2
+                * section.weight
+                * (b_matrix.T @ section_flexibility_matrix @ b_matrix)
+            )
 
         self._local_stiffness_matrix = np.linalg.inv(local_flexibility_matrix)
 
     def _calculate_transform_matrix(self):
-        reference_local_vector = self.nodes[1].get_reference_location() - \
-            self.nodes[0].get_reference_location()
+        reference_local_vector = (
+            self.nodes[1].get_reference_location() - self.nodes[0].get_reference_location()
+        )
         reference_length = np.linalg.norm(reference_local_vector)
         triad = _get_triad(reference_local_vector)
         e_1, e_2, e_3 = triad
@@ -91,8 +95,7 @@ class FiberBeam(Element):
         reference_transform_matrix[3:6, 0] = e_3
         reference_transform_matrix[3:6, 2] = e_2
         # Forces of second node
-        reference_transform_matrix[6:9, :] = - \
-            reference_transform_matrix[0:3, :]
+        reference_transform_matrix[6:9, :] = -reference_transform_matrix[0:3, :]
         # Moments of second node
         reference_transform_matrix[9:12, 1] = e_3
         reference_transform_matrix[9:12, 3] = e_2
@@ -150,13 +153,11 @@ class FiberBeam(Element):
     def state_determination(self):
         """ steps 8-12 """
         for section in self.sections:
-            section.calculate_force_increment_from_element(
-                self.chng_force_increment
-            )
+            section.calculate_force_increment_from_element(self.chng_force_increment)
             section.increment_section_forces()
             section.calculate_deformation_increment()
             section.calculate_fiber_deformation_increment()
-            section.update_stiffness_matrix() #FIXME: last section is giving wrong stiffness!!!
+            section.update_stiffness_matrix()  # FIXME: last section is giving wrong stiffness!!!
         self.update_local_stiffness_matrix()
 
     def check_convergence(self):
@@ -170,13 +171,19 @@ class FiberBeam(Element):
         return conv
 
     def update_chng_displacement_increment(self):
-        reference_local_vector = self.nodes[1].get_reference_location() - \
-            self.nodes[0].get_reference_location()
+        reference_local_vector = (
+            self.nodes[1].get_reference_location() - self.nodes[0].get_reference_location()
+        )
         reference_length = np.linalg.norm(reference_local_vector)
         residual = np.zeros(5)
         for section in self.sections:
-            residual += reference_length / 2.0 * section.weight * \
-                _calculate_b_matrix(section.position).T @ section.residual
+            residual += (
+                reference_length
+                / 2.0
+                * section.weight
+                * _calculate_b_matrix(section.position).T
+                @ section.residual
+            )
         self.chng_disp_incr = -1 * residual
 
     def finalize_load_step(self):
@@ -189,10 +196,10 @@ class FiberBeam(Element):
 
 def _calculate_b_matrix(gauss_point):
     b_matrix = np.zeros([3, 5])
-    b_matrix[0, 0] = gauss_point / 2 - 1/2
-    b_matrix[0, 1] = gauss_point / 2 + 1/2
-    b_matrix[1, 2] = gauss_point / 2 - 1/2
-    b_matrix[1, 3] = gauss_point / 2 + 1/2
+    b_matrix[0, 0] = gauss_point / 2 - 1 / 2
+    b_matrix[0, 1] = gauss_point / 2 + 1 / 2
+    b_matrix[1, 2] = gauss_point / 2 - 1 / 2
+    b_matrix[1, 3] = gauss_point / 2 + 1 / 2
     b_matrix[2, 4] = 1
     return b_matrix
 
