@@ -33,8 +33,6 @@ def main():
         stru.get_element(1).add_section(i+1)
 
     # FIBERS
-    concrete_material = fe_code.KentParkModel(6.95, 1, -0.07, 770)
-    steel_material = fe_code.MenegottoPintoModel(29000, 0.0042*29000, 60, 20, 18.5, 0.0002)
     fiber_area = (width/no_fibers_y) * (height/no_fibers_z)
     y_st = width/2*(1/no_fibers_y - 1)
     z_st = height/2*(1/no_fibers_z - 1)
@@ -47,9 +45,13 @@ def main():
                 z = z_st + height/no_fibers_z*j
                 # z = height/no_fibers_z * (j + 0.5)
                 if i in (1, 13) and j in (1, 13):
-                    section.add_fiber(counter, y, z, fiber_area, steel_material)
+                    section.add_fiber(
+                        counter, y, z, i, j, fiber_area,
+                        fe_code.MenegottoPintoModel(29000, 0.0042*29000, 60, 20, 18.5, 0.0002))
                 else:
-                    section.add_fiber(counter, y, z, fiber_area, concrete_material)
+                    section.add_fiber(
+                        counter, y, z, i, j, fiber_area,
+                        fe_code.KentParkModel(6.95, 1, -0.07, 770))
                 counter += 1
 
     # CONVERGENCE TOLERANCE VALUES
@@ -80,8 +82,6 @@ def main():
                 warning(f"Newton-Raphson did not converge {max_nr_iterations} iterations")
 
         stru.finalize_load_step()
-
-        stru.load_factor += 0.5
 
 
 if __name__ == "__main__":

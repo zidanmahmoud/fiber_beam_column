@@ -203,7 +203,6 @@ class Structure:
             )
 
         # STEP 5
-        conv = 0
         for j in range(1, max_ele_iterations+1):
             for element in self.elements:
                 # STEP 6 & 7
@@ -213,18 +212,19 @@ class Structure:
                 element.update_stiffness()
 
             # STEPS 13-15
+            conv = True
             for element in self.elements:
-                conv += element.check_convergence()
+                conv *= element.check_convergence()
 
             # STEP 17
-            if conv == len(self.elements): # all elements converged
+            if conv: # all elements converged
                 for element in self.elements:
                     for section in element.sections:
                         section.residual = np.zeros(3)
                 debug(f"Elements have converged with {j} iteration(s).")
                 break
 
-            # ... BACK TO STEP 6
+            # AAAAANNNNDDD ... BACK TO STEP 6
             for element in self.elements:
                 element.update_chng_displacement_increment()
 
