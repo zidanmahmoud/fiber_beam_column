@@ -88,11 +88,11 @@ class Structure:
     def initialize(self):
         for element in self.elements:
             element.initialize()
-        # self.calculate_stiffness_matrix()
+        self._calculate_stiffness_matrix()
 
     @property
     def tangent_stiffness(self):
-        """ Last NR iterations """
+        """ Last NR iteration """
         return self._stiffness
 
     @tangent_stiffness.setter
@@ -170,7 +170,6 @@ class Structure:
         # for element in self.elements:
         #     for section in element.sections:
         #         section.deformation_increment = np.array([1e-5, 1e-5, 1e-5])
-        self._calculate_stiffness_matrix()
 
         dofs = self.no_dofs
         lhs = np.zeros((dofs+1, dofs+1))
@@ -209,7 +208,7 @@ class Structure:
                 element.calculate_force_increment()
                 element.increment_resisting_forces()
                 # STEP 8-12
-                element.update_stiffness()
+                element.state_determination()
 
             # STEPS 13-15
             conv = True
@@ -224,7 +223,7 @@ class Structure:
                 debug(f"Elements have converged with {j} iteration(s).")
                 break
 
-            # AAAAANNNNDDD ... BACK TO STEP 6
+            # AAAND ... BACK TO STEP 6
             for element in self.elements:
                 element.update_chng_displacement_increment()
 

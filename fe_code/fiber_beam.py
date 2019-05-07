@@ -16,6 +16,8 @@ class FiberBeam(Element):
         self._nodes = [node1, node2]
         self._sections = dict()
 
+        self._local_stiffness_matrix = np.zeros((5, 5))
+
         self.chng_disp_incr = None
         self.chng_force_increment = None
         self._displacement_increment = None
@@ -44,36 +46,33 @@ class FiberBeam(Element):
         self._sections[section_id] = Section()
 
     def initialize(self):
-        for section in self.sections:
+        points, weights = GaussLobatto(len(self.sections))
+        for i, section in enumerate(self.sections):
             section.initialize()
-        # stiffness matrix
+            section.position = points[i]
+            section.weight = weights[i]
+        self.update_local_stiffness_matrix()
         # save NR
 
     def calculate_global_stiffness_matrix(self):
-        k_e_local = self._calculate_local_stiffness_matrix()
         l_e = self._calculate_transform_matrix()
-        return l_e @ k_e_local @ l_e.T
+        return l_e @ self._local_stiffness_matrix @ l_e.T
 
-    def _calculate_local_stiffness_matrix(self):
-        points, weights = GaussLobatto(len(self.sections))
+    def update_local_stiffness_matrix(self):
         local_flexibility_matrix = np.zeros((5, 5))
 
         reference_local_vector = self.nodes[1].get_reference_location(
         ) - self.nodes[0].get_reference_location()
         reference_length = np.linalg.norm(reference_local_vector)
 
-        for i, section in enumerate(self.sections):
+        for section in self.sections:
             section_flexibility_matrix = np.linalg.inv(
-                section.calculate_stiffness_matrix())
-            b_matrix = _calculate_b_matrix(points[i])
-            local_flexibility_matrix += reference_length / 2 * weights[i] * \
+                section.stiffness_matrix)
+            b_matrix = _calculate_b_matrix(section.position)
+            local_flexibility_matrix += reference_length / 2 * section.weight * \
                 (b_matrix.T @ section_flexibility_matrix @ b_matrix)
 
-            # TODO: save position & weight in initialize step!
-            section.position = points[i]
-            section.weight = weights[i]
-
-        return np.linalg.inv(local_flexibility_matrix)
+        self._local_stiffness_matrix = np.linalg.inv(local_flexibility_matrix)
 
     def _calculate_transform_matrix(self):
         reference_local_vector = self.nodes[1].get_reference_location() - \
@@ -141,15 +140,14 @@ class FiberBeam(Element):
 
     def calculate_force_increment(self):
         """ steps 6 & 7 """
-        k_e = self._calculate_local_stiffness_matrix()
-        self.chng_force_increment = k_e @ self.chng_disp_incr
+        self.chng_force_increment = self._local_stiffness_matrix @ self.chng_disp_incr
         self.force_increment += self.chng_force_increment
 
     def increment_resisting_forces(self):
         """ step 7 """
         self.resisting_forces = self.converged_resisting_forces + self.force_increment
 
-    def update_stiffness(self):
+    def state_determination(self):
         """ steps 8-12 """
         for section in self.sections:
             section.calculate_force_increment_from_element(
@@ -158,6 +156,8 @@ class FiberBeam(Element):
             section.increment_section_forces()
             section.calculate_deformation_increment()
             section.calculate_fiber_deformation_increment()
+            section.update_stiffness_matrix() #FIXME: last section is giving wrong stiffness!!!
+        self.update_local_stiffness_matrix()
 
     def check_convergence(self):
         # for section in self.sections:

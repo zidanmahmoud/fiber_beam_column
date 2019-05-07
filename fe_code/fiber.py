@@ -27,8 +27,7 @@ class Fiber:
         return self._material_class.get_material_tangent_modulus()
 
     def initialize(self):
-        nz = 0
-        self._material_class.determin_direction(nz)
+        self._material_class.determin_direction(self._nz)
 
 
     @property
@@ -48,7 +47,7 @@ class Fiber:
         self._material_class.update_change_in_material_strain_incr(self.chng_strain_increment)
         self._material_class.update_material_strain_incr()
         self._material_class.update_material_strain()
-        if self._first_iteration: #FIXME: make it somethin from inside the material class.. maybe
+        if self._first_iteration: #FIXME: this should be a check reversal
             self._material_class.update_model_parameters(self._nz)
         self._material_class.update_material_stress()
         self._material_class.update_material_tangent_modulus()
