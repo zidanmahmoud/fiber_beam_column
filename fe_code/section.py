@@ -4,6 +4,7 @@ Section
 import numpy as np
 
 from .fiber import Fiber
+from .io import debug
 
 
 class Section:
@@ -25,6 +26,7 @@ class Section:
         self._deformation_increment = None
         self.converged_section_forces = np.zeros(3)
         self.forces = np.zeros(3)
+        self.unbalance_forces = np.zeros(3)
         self.residual = np.zeros(3)
 
     @property
@@ -113,9 +115,12 @@ class Section:
         resisting_forces = np.zeros(3)
         for fiber in self.fibers:
             resisting_forces += fiber.stress * fiber.area * fiber.direction
-        flexibility = np.linalg.inv(self.stiffness_matrix)
-        self.residual = flexibility @ (self.forces - resisting_forces)
-        return abs(np.linalg.norm(self.forces - resisting_forces)) < self._tolerance
+        self.unbalance_forces = self.forces - resisting_forces
+        return abs(np.linalg.norm(self.unbalance_forces)) < self._tolerance
+
+    def calculate_displacement_residuals(self):
+        self.residual = np.linalg.inv(self.stiffness_matrix) @ self.unbalance_forces
+
 
     def save_nr_iteration(self):
         self._force_increment = None

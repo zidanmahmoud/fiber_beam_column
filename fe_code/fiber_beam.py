@@ -144,6 +144,8 @@ class FiberBeam(Element):
     def calculate_force_increment(self):
         """ steps 6 & 7 """
         self.chng_force_increment = self._local_stiffness_matrix @ self.chng_disp_incr
+        print(self.chng_disp_incr);input()
+        #FIXME: this is different in the two versions of the code! Numerical accuracy maybe...
         self.force_increment += self.chng_force_increment
 
     def increment_resisting_forces(self):
@@ -158,29 +160,34 @@ class FiberBeam(Element):
             section.calculate_deformation_increment()
             section.calculate_fiber_deformation_increment()
             section.update_stiffness_matrix()  # FIXME: last section is giving wrong stiffness!!!
+
         self.update_local_stiffness_matrix()
 
     def check_convergence(self):
-        # for section in self.sections:
-        #     if not section.check_convergence():
-        #         return False
-        # return True
-        conv = True
         for section in self.sections:
-            conv *= section.check_convergence()
-        return conv
+            if not section.check_convergence():
+                return False
+        return True
+        # conv = True
+        # for section in self.sections:
+        #     conv *= section.check_convergence()
+        # return conv
 
-    def update_chng_displacement_increment(self):
+    def calculate_displacement_residuals(self):
+
+        for section in self.sections:
+            section.calculate_displacement_residuals()
+
         reference_local_vector = (
-            self.nodes[1].get_reference_location() - self.nodes[0].get_reference_location()
+            self.nodes[1].get_reference_location()
+            - self.nodes[0].get_reference_location()
         )
         reference_length = np.linalg.norm(reference_local_vector)
+
         residual = np.zeros(5)
         for section in self.sections:
             residual += (
-                reference_length
-                / 2.0
-                * section.weight
+                reference_length / 2.0 * section.weight
                 * _calculate_b_matrix(section.position).T
                 @ section.residual
             )

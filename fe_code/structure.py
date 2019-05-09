@@ -164,8 +164,7 @@ class Structure:
         rhs[:dofs] = self._unbalanced_forces
         rhs[-1] = self.force_vector @ self.displacement_increment - self.length_increment
 
-        for condition in self._dirichlet_conditions.items():
-            dof, _ = condition
+        for dof, _ in self._dirichlet_conditions.items():
             i = self.index_from_dof(dof)
             lhs[:, i] = 0
             lhs[i, :] = 0
@@ -185,6 +184,7 @@ class Structure:
 
         # STEP 5
         for j in range(1, max_ele_iterations + 1):
+            print(f"j : {j}")
             for element in self.elements:
                 # STEP 6 & 7
                 element.calculate_force_increment()
@@ -207,7 +207,7 @@ class Structure:
 
             # AAAND ... BACK TO STEP 6
             for element in self.elements:
-                element.update_chng_displacement_increment()
+                element.calculate_displacement_residuals()
 
             if j == max_ele_iterations:
                 warning(f"ELEMENTS DID NOT CONVERGE WITH {max_ele_iterations} ITERATIONS")
