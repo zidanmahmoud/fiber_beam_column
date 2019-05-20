@@ -121,7 +121,6 @@ class Section:
     def calculate_displacement_residuals(self):
         self.residual = np.linalg.inv(self.stiffness_matrix) @ self.unbalance_forces
 
-
     def save_nr_iteration(self):
         self._force_increment = None
         self._deformation_increment = None

@@ -1,4 +1,6 @@
 """Printing functions"""
+
+
 def debug(message, *args, **kwargs):
     """ normal print function """
     print(message, *args, **kwargs)
