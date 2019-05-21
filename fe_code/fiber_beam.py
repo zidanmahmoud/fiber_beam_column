@@ -144,6 +144,12 @@ class FiberBeam(Element):
     def calculate_force_increment(self):
         """ steps 6 & 7 """
         self.chng_force_increment = self._local_stiffness_matrix @ self.chng_disp_incr
+        # print(self._local_stiffness_matrix)
+        # print("\t@")
+        # print(self.chng_disp_incr)
+        # print("\t=")
+        # print(self.chng_force_increment)
+        # input()
         self.force_increment += self.chng_force_increment
 
     def increment_resisting_forces(self):

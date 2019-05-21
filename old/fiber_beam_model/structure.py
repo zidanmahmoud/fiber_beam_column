@@ -132,7 +132,6 @@ class Structure(object):
         modified_F[len(load_vector)] = load_vector @ structural_displacement_incr - self.length_incr
 
         solved_change_in_incr = la.inv(modified_K) @ modified_F
-        # print('step3. solved_change_in_incr = ', solved_change_in_incr)
         self.change_in_structural_displacement_incr = solved_change_in_incr[0:self.DoF]
         self.change_in_load_factor_incr = solved_change_in_incr[self.DoF]
 
@@ -150,7 +149,6 @@ class Structure(object):
 
         for element in self.elements_list:
             for j in range(1, 100+1):
-                print(f"j = {j}")
 
                 # print('j = ', j)
                 # print('---------')
@@ -303,7 +301,6 @@ class Structure(object):
         self.structural_unbalanced_force = self.calculate_structural_unbalanced_force()
 
     def check_for_structural_convergence(self):
-
         if la.norm(self.structural_unbalanced_force) < self.tolerance:
             return True
 
@@ -339,22 +336,19 @@ class Structure(object):
 
     def calculate_structural_resisting_force(self):
 
-        elements_list = self.elements_list
         element_node_map = self.element_node_map
         structural_resisting_force = np.zeros(self.DoF)
 
-        for ne in range(len(elements_list)):
-            single_element = elements_list[ne]
-            id1 = element_node_map[0, ne]
-            id2 = element_node_map[1, ne]
-            FE = single_element.calculate_element_global_internal_forces()
+        for i, element in enumerate(self.elements_list):
+            id1 = element_node_map[0, i]
+            id2 = element_node_map[1, i]
+            FE = element.calculate_element_global_internal_forces()
             structural_resisting_force[6*id1:6*(id1+1)] += FE[0:6]
             structural_resisting_force[6*id2:6*(id2+1)] += FE[6:12]
 
         return structural_resisting_force
 
     def calculate_structural_external_force(self):
-
         return self.load_factor * self.load_vector
 
     def calculate_structural_unbalanced_force(self):
@@ -366,6 +360,8 @@ class Structure(object):
         single_element.update_change_in_element_force_incr(j)
         single_element.update_element_force_incr()
         single_element.update_element_resisting_forces()
+        print(single_element.element_resisting_forces)
+        input()
         reverse = single_element.update_section_parameters_in_loadstep(load_step_convergence, j, i, k)
         single_element.update_element_local_stiffness_matrix()
 

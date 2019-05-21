@@ -189,11 +189,12 @@ class Structure:
 
         # STEP 5
         for j in range(1, max_ele_iterations + 1):
-            print(f"j : {j}")
             for element in self.elements:
                 # STEP 6 & 7
                 element.calculate_force_increment()
                 element.increment_resisting_forces()
+                print(element.resisting_forces)
+                input()
                 # STEP 8-12
                 element.state_determination()
 
@@ -204,11 +205,11 @@ class Structure:
 
             # STEP 17
             if conv:  # all elements converged
+                self._calculate_stiffness_matrix()
                 for element in self.elements:
                     for section in element.sections:
                         section.residual = np.zeros(3)
                 debug(f"Elements have converged with {j} iteration(s).")
-                input()
                 break
 
             # AAAND ... BACK TO STEP 6
@@ -225,6 +226,8 @@ class Structure:
             f_e = element.l_e @ element.resisting_forces
             i = [self.index_from_dof(dof) for dof in element.dofs]
             resisting_forces[i] += f_e
+        for dof in self._dirichlet_conditions:
+            resisting_forces[self.index_from_dof(dof)] = 0.0
 
         external_forces = self._calculate_force_vector()
         self._unbalanced_forces = external_forces - resisting_forces

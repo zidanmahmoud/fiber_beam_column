@@ -2,7 +2,7 @@ import sys
 sys.path.append("./fiber_beam_model")
 # import necessary modules
 import numpy as np
-np.set_printoptions(linewidth=190)
+np.set_printoptions(linewidth=1000, floatmode="unique")
 import fiber_beam_model as fbm
 import matplotlib.pyplot as plt
 import time
@@ -90,12 +90,14 @@ while (k <= step_n):
         #print('step18. structural_external_force = ', st.get_structural_external_force())
         st.update_structural_unbalanced_force()
         #print('step18. structural_unbalanced_force = ', st.get_structural_unbalanced_force())
+        print(st.structural_resisting_force)
+        input()
 
         if st.check_for_structural_convergence():
             print('**** NR converged at i =', i)
             st.save_to_last_loadstep(True)
             break
-        if i == 99:
+        if i == 100:
             print("WARNING: NewtonRaphson iteration did not converge!!")
     k += 1
     external_force = st.get_structural_external_force()

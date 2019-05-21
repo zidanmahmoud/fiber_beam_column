@@ -329,10 +329,6 @@ class Section(object):
         secforces = self.secforces
         sec_resisting_forces = self.calculate_sec_resisting_forces()
         section_unbalanced_forces = secforces - sec_resisting_forces
-        #print('step14. secforces = ', secforces)
-        #print('step13. sec_resisting_forces = ', sec_resisting_forces)
-        #print('step14. section_unbalanced_forces = ', section_unbalanced_forces)
-        #print('step14. la.norm(section_unbalanced_forces) = ', la.norm(section_unbalanced_forces))
 
         if la.norm(section_unbalanced_forces) < self.section_tolerance:
             return True
@@ -367,21 +363,16 @@ class Section(object):
     def calculate_sec_resisting_forces(self):
 
         sec_resisting_forces = np.zeros(3)
-        fiber_list = self.fiber_list
         vector = np.zeros(3)
-
-        for ny in range(len(fiber_list[:][0])):
-            for nz in range(len(fiber_list[:][0])):
-                single_fiber = fiber_list[ny][nz]
-                fiber_position = single_fiber.get_fiber_position()
-                fiber_stress = single_fiber.get_fiber_stress()
-                fiber_area = single_fiber.get_fiber_area()
+        for ny, fiber_row in enumerate(self.fiber_list[:]):
+            for nz, fiber in enumerate(fiber_row):
+                fiber_position = fiber.get_fiber_position()
+                fiber_stress = fiber.get_fiber_stress()
+                fiber_area = fiber.get_fiber_area()
                 vector[0] = -fiber_position[0]
                 vector[1] = fiber_position[1]
                 vector[2] = 1.
                 sec_resisting_forces += fiber_stress * fiber_area * vector
-                fiber_list[ny][nz] = single_fiber
-        self.fiber_list = fiber_list
 
         return sec_resisting_forces
 

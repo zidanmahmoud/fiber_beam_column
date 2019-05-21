@@ -305,13 +305,8 @@ class FiberBeam(object):
     def check_for_element_convergence(self):
 
         element_convergence = True
-
-        section_list = self.section_list
-
-        for nk in range(len(section_list)):
-            single_section = section_list[nk]
-            element_convergence *= single_section.check_section_convergence()
-
+        for section in self.section_list:
+            element_convergence *= section.check_section_convergence()
         return element_convergence
 ################################################################################
 ################################################################################
@@ -344,15 +339,24 @@ class FiberBeam(object):
 
         if j == 1:
             change_in_element_disp_incr = self.change_in_element_disp_incr
-            print(change_in_element_disp_incr); input()
             element_local_stiffness_matrix_last_NR_i = self.element_local_stiffness_matrix_last_NR_i
             change_in_element_force_incr = element_local_stiffness_matrix_last_NR_i @ change_in_element_disp_incr
+            # print(element_local_stiffness_matrix_last_NR_i)
+            # print("\t@")
+            # print(change_in_element_disp_incr)
+            # print("\t=")
+            # print(change_in_element_force_incr)
         elif j > 1:
             residual_element_disps = self.residual_element_disps
-            print(residual_element_disps); input()
             element_local_stiffness_matrix = self.element_local_stiffness_matrix
             change_in_element_force_incr = -element_local_stiffness_matrix @ residual_element_disps
+            # print(element_local_stiffness_matrix)
+            # print("\t@")
+            # print(- residual_element_disps)
+            # print("\t=")
+            # print(change_in_element_force_incr)
 
+        # input()
         return change_in_element_force_incr
 
     '''
@@ -432,6 +436,8 @@ class FiberBeam(object):
     def calculate_element_global_internal_forces(self):
 
         reference_transform_matrix = self.get_reference_transform_matrix()
+        print(self.element_resisting_forces)
+        input()
 
         return reference_transform_matrix @ self.element_resisting_forces
 
