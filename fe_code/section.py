@@ -105,7 +105,7 @@ class Section:
 
     def calculate_fiber_deformation_increment(self):
         """ step 10 """
-        for fiber in self.fibers:
+        for i, fiber in enumerate(self.fibers):
             fiber.calculate_strain_increment_from_section(self.chng_def_increment)
             fiber.increment_strain()
             fiber.calculate_stress()
@@ -113,7 +113,7 @@ class Section:
     def check_convergence(self):
         """ steps 13-15 """
         resisting_forces = np.zeros(3)
-        for fiber in self.fibers:
+        for i, fiber in enumerate(self.fibers):
             resisting_forces += fiber.stress * fiber.area * fiber.direction
         self.unbalance_forces = self.forces - resisting_forces
         return abs(np.linalg.norm(self.unbalance_forces)) < self._tolerance

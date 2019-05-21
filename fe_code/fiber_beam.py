@@ -162,14 +162,16 @@ class FiberBeam(Element):
         self.update_local_stiffness_matrix()
 
     def check_convergence(self):
-        for section in self.sections:
-            if not section.check_convergence():
-                return False
-        return True
-        # conv = True
         # for section in self.sections:
-        #     conv *= section.check_convergence()
-        # return conv
+        #     if not section.check_convergence():
+        #         return False
+        # return True
+        conv = True
+        for section in self.sections:
+            conv *= section.check_convergence()
+            # print(section.forces)
+        # input()
+        return conv
 
     def calculate_displacement_residuals(self):
 

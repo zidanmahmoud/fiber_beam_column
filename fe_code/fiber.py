@@ -50,6 +50,7 @@ class Fiber:
         self._material_class.update_material_strain()
         if self._first_iteration:  # FIXME: this should be a check reversal
             self._material_class.update_model_parameters(self._nz)
+        self._first_iteration = False
         self._material_class.update_material_stress()
         self._material_class.update_material_tangent_modulus()
 

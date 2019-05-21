@@ -208,6 +208,7 @@ class Structure:
                     for section in element.sections:
                         section.residual = np.zeros(3)
                 debug(f"Elements have converged with {j} iteration(s).")
+                input()
                 break
 
             # AAAND ... BACK TO STEP 6
