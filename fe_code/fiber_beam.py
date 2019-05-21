@@ -177,15 +177,16 @@ class FiberBeam(Element):
             section.calculate_displacement_residuals()
 
         reference_local_vector = (
-            self.nodes[1].get_reference_location()
-            - self.nodes[0].get_reference_location()
+            self.nodes[1].get_reference_location() - self.nodes[0].get_reference_location()
         )
         reference_length = np.linalg.norm(reference_local_vector)
 
         residual = np.zeros(5)
         for section in self.sections:
             residual += (
-                reference_length / 2.0 * section.weight
+                reference_length
+                / 2.0
+                * section.weight
                 * _calculate_b_matrix(section.position).T
                 @ section.residual
             )
