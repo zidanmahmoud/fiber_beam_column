@@ -11,7 +11,7 @@ from .kent_park_model import KentParkModel
 from .menegotto_pinto_model import MenegottoPintoModel
 from .io import debug, warning
 
-numpy.set_printoptions(linewidth=190)
+numpy.set_printoptions(linewidth=1000, floatmode="unique")
 if sys.version_info < (3, 6):
     raise RuntimeError("The fiber beam-column module requires at least Python 3.6!")
 

@@ -33,6 +33,11 @@ class Structure:
     def tolerance(self, value):
         self._tolerance = value
 
+    def set_section_tolerance(self, value):
+        for element in self.elements:
+            for section in element.sections:
+                section.tolerance = value
+
     @property
     def nodes(self):
         return self._nodes.values()
@@ -119,7 +124,7 @@ class Structure:
     def force_vector(self):
         controlled_dof = (2, "w")
         force = np.zeros(self.no_dofs)
-        force[self.index_from_dof(controlled_dof)] = 1.0
+        force[self.index_from_dof(controlled_dof)] = 1
         return force
 
     def _calculate_stiffness_matrix(self):
@@ -158,19 +163,19 @@ class Structure:
         dofs = self.no_dofs
         lhs = np.zeros((dofs + 1, dofs + 1))
         lhs[:dofs, :dofs] = self.tangent_stiffness
-        lhs[:dofs, -1] = -self.force_vector
-        lhs[-1, :dofs] = -self.force_vector
-        rhs = np.zeros(dofs + 1)
-        rhs[:dofs] = self._unbalanced_forces
-        rhs[-1] = self.force_vector @ self.displacement_increment - self.length_increment
-
         for dof, _ in self._dirichlet_conditions.items():
             i = self.index_from_dof(dof)
             lhs[:, i] = 0
             lhs[i, :] = 0
             lhs[i, i] = 1
 
-        change_in_increments = np.linalg.solve(lhs, rhs)
+        lhs[:dofs, -1] = -self.force_vector
+        lhs[-1, :dofs] = -self.force_vector
+        rhs = np.zeros(dofs + 1)
+        rhs[:dofs] = self._unbalanced_forces
+        rhs[-1] = self.force_vector @ self.displacement_increment - self.length_increment
+
+        change_in_increments = np.linalg.inv(lhs) @ rhs
         self.displacement_increment += change_in_increments[:dofs]
         self._load_factor_increment += change_in_increments[-1]
         self._load_factor += self._load_factor_increment

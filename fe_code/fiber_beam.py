@@ -144,7 +144,12 @@ class FiberBeam(Element):
     def calculate_force_increment(self):
         """ steps 6 & 7 """
         self.chng_force_increment = self._local_stiffness_matrix @ self.chng_disp_incr
-        print(self.chng_disp_incr);input()
+        print(repr(self._local_stiffness_matrix))
+        print("\t@")
+        print(repr(self.chng_disp_incr))
+        print("\t=")
+        print(repr(self.chng_force_increment))
+        input()
         #FIXME: this is different in the two versions of the code! Numerical accuracy maybe...
         self.force_increment += self.chng_force_increment
 

@@ -3,9 +3,9 @@ import fe_code
 from fe_code import debug, warning
 
 # == MODELING PARAMETERS
-LENGTH = 100
-WIDTH = 5
-HEIGHT = 8
+LENGTH = 100.0
+WIDTH = 5.0
+HEIGHT = 8.0
 NO_SECTIONS = 4
 NO_FIBERS_Y = 15
 NO_FIBERS_Z = 15
@@ -18,8 +18,8 @@ def main():
     debug("Constructed an empty stucture.")
 
     # NODES
-    stru.add_node(1, 0, 0, 0)
-    stru.add_node(2, LENGTH, 0, 0)
+    stru.add_node(1, 0.0, 0.0, 0.0)
+    stru.add_node(2, LENGTH, 0.0, 0.0)
     debug(f"Added {len(stru.nodes)} nodes.")
 
     # ELEMENTS
@@ -57,14 +57,13 @@ def main():
 
     # CONVERGENCE TOLERANCE VALUES
     stru.tolerance = 0.05
-    for section in stru.get_element(1).sections:
-        section.tolerance = 0.05
+    stru.set_section_tolerance(0.05)
 
     # BOUNDARY CONDITIONS
     controled_dof = (2, "w")
-    stru.add_neumann_condition(controled_dof[0], controled_dof[1], 1)
-    stru.add_dirichlet_condition(1, "uvwxyz", 0)
-    stru.add_dirichlet_condition(2, "x", 0)
+    stru.add_neumann_condition(controled_dof[0], controled_dof[1], 1.0)
+    stru.add_dirichlet_condition(1, "uvwxyz", 0.0)
+    stru.add_dirichlet_condition(2, "x", 0.0)
     # stru.add_dirichlet_condition(2, "w", 0.005)
     debug("Added the boundary conditions.")
 
@@ -81,9 +80,11 @@ def main():
         for i in range(1, max_nr_iterations + 1):
 
             stru.solve(max_ele_iterations)
+
             if stru.check_nr_convergence():
                 debug(f"NR converged with {i} iteration(s).")
                 break
+
             if i == max_nr_iterations:
                 warning(f"Newton-Raphson did not converge {max_nr_iterations} iterations")
 
