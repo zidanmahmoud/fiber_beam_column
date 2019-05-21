@@ -157,7 +157,7 @@ class FiberBeam(Element):
             section.increment_section_forces()
             section.calculate_deformation_increment()
             section.calculate_fiber_deformation_increment()
-            section.update_stiffness_matrix()  # FIXME: last section is giving wrong stiffness!!!
+            section.update_stiffness_matrix()
 
         self.update_local_stiffness_matrix()
 
