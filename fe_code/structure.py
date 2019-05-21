@@ -193,7 +193,7 @@ class Structure:
                 # STEP 6 & 7
                 element.calculate_force_increment()
                 element.increment_resisting_forces()
-                print(element.resisting_forces)
+                debug(element.resisting_forces)
                 input()
                 # STEP 8-12
                 element.state_determination()
@@ -209,7 +209,7 @@ class Structure:
                 for element in self.elements:
                     for section in element.sections:
                         section.residual = np.zeros(3)
-                debug(f"Elements have converged with {j} iteration(s).")
+                print(f"Elements have converged with {j} iteration(s).")
                 break
 
             # AAAND ... BACK TO STEP 6

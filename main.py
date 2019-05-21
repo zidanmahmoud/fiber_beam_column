@@ -1,6 +1,6 @@
 """main"""
 import fe_code
-from fe_code import debug, warning
+from fe_code.io import warning
 
 # == MODELING PARAMETERS
 LENGTH = 100.0
@@ -16,21 +16,21 @@ def main():
 
     # STRUCTURE INITIALIZATION
     stru = fe_code.Structure()
-    debug("Constructed an empty stucture.")
+    print("Constructed an empty stucture.")
 
     # NODES
     stru.add_node(1, 0.0, 0.0, 0.0)
     stru.add_node(2, LENGTH, 0.0, 0.0)
-    debug(f"Added {len(stru.nodes)} nodes.")
+    print(f"Added {len(stru.nodes)} nodes.")
 
     # ELEMENTS
     stru.add_fiber_beam_element(1, 1, 2)
-    debug(f"Added {len(stru.elements)} elements.")
+    print(f"Added {len(stru.elements)} elements.")
 
     # SECTIONS
     for i in range(NO_SECTIONS):
         stru.get_element(1).add_section(i + 1)
-    debug(f"Added {sum([len(element.sections) for element in stru.elements])} sections.")
+    print(f"Added {sum([len(element.sections) for element in stru.elements])} sections.")
 
     # FIBERS
     fiber_area = (WIDTH / NO_FIBERS_Y) * (HEIGHT / NO_FIBERS_Z)
@@ -54,7 +54,7 @@ def main():
                         counter, y, z, i, j, fiber_area, fe_code.KentParkModel(6.95, 1, -0.07, 770)
                     )
                 counter += 1
-    debug(f"Added {counter - 1} fibers.")
+    print(f"Added {counter - 1} fibers.")
 
     # CONVERGENCE TOLERANCE VALUES
     stru.tolerance = 0.05
@@ -66,24 +66,24 @@ def main():
     stru.add_dirichlet_condition(1, "uvwxyz", 0.0)
     stru.add_dirichlet_condition(2, "x", 0.0)
     # stru.add_dirichlet_condition(2, "w", 0.005)
-    debug("Added the boundary conditions.")
+    print("Added the boundary conditions.")
 
     max_nr_iterations = 100
     max_ele_iterations = 100
 
     stru.initialize()
-    debug(":: Initialized the solver ::")
+    print(":: Initialized the solver ::")
 
-    debug("\n:: Starting solution loop ::")
+    print("\n:: Starting solution loop ::")
     for k in range(1, 10 + 1):
-        debug(f"\nLOAD STEP : {k}")
+        print(f"\nLOAD STEP : {k}")
 
         for i in range(1, max_nr_iterations + 1):
 
             stru.solve(max_ele_iterations)
 
             if stru.check_nr_convergence():
-                debug(f"NR converged with {i} iteration(s).")
+                print(f"NR converged with {i} iteration(s).")
                 break
 
             if i == max_nr_iterations:

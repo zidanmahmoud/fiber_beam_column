@@ -4,7 +4,6 @@ Section
 import numpy as np
 
 from .fiber import Fiber
-from .io import debug
 
 
 class Section:
