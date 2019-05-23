@@ -21,3 +21,4 @@ from .node import Node
 from .structure import Structure
 from .boundary_conditions import BoundaryConditions
 from .integral_scheme import GaussLobatto
+from .io import debug

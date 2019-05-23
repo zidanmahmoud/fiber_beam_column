@@ -1,11 +1,11 @@
-import sys
-sys.path.append("./fiber_beam_model")
-# import necessary modules
-import numpy as np
-np.set_printoptions(linewidth=1000, floatmode="unique")
-import fiber_beam_model as fbm
-import matplotlib.pyplot as plt
+
 import time
+import matplotlib.pyplot as plt
+import numpy as np
+import fiber_beam_model as fbm
+from fiber_beam_model import debug
+np.set_printoptions(linewidth=1000, floatmode="unique")
+# import necessary modules
 start = time.time()
 
 
