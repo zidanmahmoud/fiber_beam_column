@@ -10,7 +10,8 @@ def debug(variable):
         search = re.search(r'debug\s*\((.+?)\)$', caller_lines)
         if search:
             caller_lines = search.group(1)
-        print(caller_lines, ":\n", variable, end="")
+        print(f"\n{caller_lines}:\n{variable}", end="")
         input()
+        print()
     finally:
         del frame

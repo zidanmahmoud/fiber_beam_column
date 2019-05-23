@@ -192,11 +192,13 @@ class Structure:
             for element in self.elements:
                 # STEP 6 & 7
                 element.calculate_force_increment()
-                debug(element.chng_force_increment)
+                # debug(element.chng_force_increment)
+                # debug(element.force_increment)
                 element.increment_resisting_forces()
                 # debug(element.resisting_forces)
                 # STEP 8-12
                 element.state_determination()
+                debug(element._local_stiffness_matrix)
 
             # STEPS 13-15
             conv = True

@@ -90,8 +90,6 @@ while (k <= step_n):
         #print('step18. structural_external_force = ', st.get_structural_external_force())
         st.update_structural_unbalanced_force()
         #print('step18. structural_unbalanced_force = ', st.get_structural_unbalanced_force())
-        print(st.structural_resisting_force)
-        input()
 
         if st.check_for_structural_convergence():
             print('**** NR converged at i =', i)

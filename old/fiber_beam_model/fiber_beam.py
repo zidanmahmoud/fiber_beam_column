@@ -436,8 +436,6 @@ class FiberBeam(object):
     def calculate_element_global_internal_forces(self):
 
         reference_transform_matrix = self.get_reference_transform_matrix()
-        print(self.element_resisting_forces)
-        input()
 
         return reference_transform_matrix @ self.element_resisting_forces
 
