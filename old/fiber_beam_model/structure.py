@@ -1,6 +1,7 @@
 import numpy as np
 import numpy.linalg as la
 import matplotlib.pyplot as plt
+from .io import debug
 
 class Structure(object):
 
@@ -358,10 +359,9 @@ class Structure(object):
     def execute_element_state_determination(self, single_element, load_step_convergence, j,  i, k):
 
         single_element.update_change_in_element_force_incr(j)
+        debug(single_element.change_in_element_force_incr)
         single_element.update_element_force_incr()
         single_element.update_element_resisting_forces()
-        print(single_element.element_resisting_forces)
-        input()
         reverse = single_element.update_section_parameters_in_loadstep(load_step_convergence, j, i, k)
         single_element.update_element_local_stiffness_matrix()
 
