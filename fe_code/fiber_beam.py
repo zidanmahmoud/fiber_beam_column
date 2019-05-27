@@ -126,15 +126,6 @@ class FiberBeam(Element):
     def l_e(self):
         return self._calculate_transform_matrix()
 
-    # @property
-    # def displacement_residual(self):
-    #     if self._displacement_residual is None:
-    #         return np.zeros(5)
-    #     return self._displacement_residual
-    # @displacement_residual.setter
-    # def displacement_residual(self, value):
-    #     self._displacement_residual = value
-
     def calculate_displacement_increment_from_structure(self, structure_chng_disp_incr):
         """step 4"""
         l_e = self._calculate_transform_matrix()
@@ -146,13 +137,7 @@ class FiberBeam(Element):
         if self.displacement_residual is None:
             self.chng_force_increment = self._local_stiffness_matrix @ self.chng_disp_incr
         else:
-            self.chng_force_increment = - self._local_stiffness_matrix @ self.displacement_residual
-        # print(self._local_stiffness_matrix)
-        # print("\t@")
-        # print(self.chng_disp_incr)
-        # print("\t=")
-        # print(self.chng_force_increment)
-        # input()
+            self.chng_force_increment = -self._local_stiffness_matrix @ self.displacement_residual
         self.force_increment += self.chng_force_increment
 
     def increment_resisting_forces(self):
