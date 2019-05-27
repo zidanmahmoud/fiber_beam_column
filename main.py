@@ -80,8 +80,27 @@ def main():
     load = [0]
     disp = [0]
     print("\n:: Starting solution loop ::")
-    for k in range(1, 10 + 1):
+    for k in range(1, 55 + 1):
         print(f"\nLOAD STEP : {k}")
+
+        if k == 10 + 1:
+            stru.new_loading(-0.01 * 0.4, 1e-20)
+            if i == 1:
+                for element in stru.elements:
+                    for section in element.sections:
+                        for fiber in section.fibers:
+                            fiber._first_iteration = True
+        elif k > 10 + 1 and k < 30 + 1:
+            stru.new_loading(-0.4, 1e-20)
+        elif k == 30 + 1 :
+            stru.new_loading(0.01 * 0.04, 1e-20)
+            if i == 1:
+                for element in stru.elements:
+                    for section in element.sections:
+                        for fiber in section.fibers:
+                            fiber._first_iteration = True
+        elif k > 30 + 1 and k < 55 + 1:
+            stru.new_loading(0.4, 1e-20)
 
         for i in range(1, max_nr_iterations + 1):
             stru.solve(max_ele_iterations)
@@ -95,27 +114,6 @@ def main():
 
         load.append(stru.converged_load_factor)
         disp.append(stru.converged_displacement[index_from_dof(controled_dof)])
-
-    # for k in range(10 + 1, 30 + 1):
-    #     print(f"\nLOAD STEP : {k}")
-
-    #     if k == 10 + 1:
-    #         stru.new_loading(-0.01 * 0.4, 1e-20)
-    #     else:
-    #         stru.new_loading(-0.4, 1e-20)
-
-    #     for i in range(1, max_nr_iterations + 1):
-    #         stru.solve(max_ele_iterations)
-    #         if stru.check_nr_convergence():
-    #             print(f"NR converged with {i} iteration(s).")
-    #             break
-    #         if i == max_nr_iterations:
-    #             warning(f"Newton-Raphson did not converge {max_nr_iterations} iterations")
-
-    #     stru.finalize_load_step()
-
-    #     load.append(stru.converged_load_factor)
-    #     disp.append(stru.converged_displacement[index_from_dof(controled_dof)])
 
     _, axes = plt.subplots()
     load = 100 * np.array(load)
