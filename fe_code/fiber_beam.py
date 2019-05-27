@@ -24,7 +24,7 @@ class FiberBeam(Element):
         self._force_increment = None
         self.converged_resisting_forces = np.zeros(5)
         self.resisting_forces = np.zeros(5)
-        # self._displacement_residual = None
+        self.displacement_residual = None
 
     @property
     def nodes(self):
@@ -143,7 +143,10 @@ class FiberBeam(Element):
 
     def calculate_force_increment(self):
         """ steps 6 & 7 """
-        self.chng_force_increment = self._local_stiffness_matrix @ self.chng_disp_incr
+        if self.displacement_residual is None:
+            self.chng_force_increment = self._local_stiffness_matrix @ self.chng_disp_incr
+        else:
+            self.chng_force_increment = - self._local_stiffness_matrix @ self.displacement_residual
         # print(self._local_stiffness_matrix)
         # print("\t@")
         # print(self.chng_disp_incr)
@@ -189,23 +192,22 @@ class FiberBeam(Element):
         )
         reference_length = np.linalg.norm(reference_local_vector)
 
-        residual = np.zeros(5)
+        self.displacement_residual = np.zeros(5)
         for section in self.sections:
-            residual += (
+            self.displacement_residual += (
                 reference_length
                 / 2.0
                 * section.weight
                 * _calculate_b_matrix(section.position).T
                 @ section.residual
             )
-        self.chng_disp_incr = -1 * residual
 
     def finalize_load_step(self):
         self._force_increment = None
         self._displacement_increment = None
         self.converged_resisting_forces = self.resisting_forces
-        for section in self.sections:
-            section.finalize_load_step()
+        # for section in self.sections:
+        #     section.finalize_load_step()
 
 
 def _calculate_b_matrix(gauss_point):

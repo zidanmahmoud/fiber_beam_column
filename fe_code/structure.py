@@ -1,8 +1,9 @@
+
 import numpy as np
 
 from .node import Node
 from .fiber_beam import FiberBeam
-from .io import debug, warning
+from .io import warning
 
 
 DOF_INDEX_MAP = {"u": 0, "v": 1, "w": 2, "x": 3, "y": 4, "z": 5}
@@ -16,8 +17,9 @@ class Structure:
         self._newmann_conditions = dict()
         self._tolerance = 1e-7
 
-        self._load_factor_increment = 0
-        self._load_factor = 0
+        self._load_factor_increment = 0.0
+        self._load_factor = 0.0
+        self._converged_load_factor = 0.0
         self.length_increment = 0.4
 
         self._stiffness = None
@@ -178,7 +180,7 @@ class Structure:
         change_in_increments = np.linalg.inv(lhs) @ rhs
         self.displacement_increment += change_in_increments[:dofs]
         self._load_factor_increment += change_in_increments[-1]
-        self._load_factor += self._load_factor_increment
+        self._load_factor = self._converged_load_factor + self._load_factor_increment
 
         # STEP 4
         for element in self.elements:
@@ -192,13 +194,9 @@ class Structure:
             for element in self.elements:
                 # STEP 6 & 7
                 element.calculate_force_increment()
-                # debug(element.chng_force_increment)
-                # debug(element.force_increment)
                 element.increment_resisting_forces()
-                # debug(element.resisting_forces)
                 # STEP 8-12
                 element.state_determination()
-                debug(element._local_stiffness_matrix)
 
             # STEPS 13-15
             conv = True
@@ -209,6 +207,7 @@ class Structure:
             if conv:  # all elements converged
                 self._calculate_stiffness_matrix()
                 for element in self.elements:
+                    element.displacement_residual = None
                     for section in element.sections:
                         section.residual = np.zeros(3)
                 print(f"Elements have converged with {j} iteration(s).")
@@ -228,16 +227,19 @@ class Structure:
             f_e = element.l_e @ element.resisting_forces
             i = [self.index_from_dof(dof) for dof in element.dofs]
             resisting_forces[i] += f_e
-        for dof in self._dirichlet_conditions:
-            resisting_forces[self.index_from_dof(dof)] = 0.0
 
         external_forces = self._calculate_force_vector()
+
         self._unbalanced_forces = external_forces - resisting_forces
+        for dof, value in self._dirichlet_conditions.items():
+            self._unbalanced_forces[self.index_from_dof(dof)] = value
+
         return abs(np.linalg.norm(self._unbalanced_forces)) < self._tolerance
 
     def finalize_load_step(self):
         """ step 21 """
         self.current_displacement += self.displacement_increment
         self._displacement_increment = None
+        self._converged_load_factor = self._load_factor
         for element in self.elements:
             element.finalize_load_step()
