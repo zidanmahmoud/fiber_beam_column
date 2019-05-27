@@ -1,22 +1,13 @@
+
 import numpy as np
 
 from .node import Node
 from .fiber_beam import FiberBeam
+from .io import warning
 
-def debug(message, *args, **kwargs):
-    print(message, *args, **kwargs)
 
-def warning(message, *args, **kwargs):
-    print('\33[93m'+"WARNING: "+message.upper()+'\33[0m', *args, **kwargs)
+DOF_INDEX_MAP = {"u": 0, "v": 1, "w": 2, "x": 3, "y": 4, "z": 5}
 
-DOF_INDEX_MAP = {
-    "u": 0,
-    "v": 1,
-    "w": 2,
-    "x": 3,
-    "y": 4,
-    "z": 5,
-}
 
 class Structure:
     def __init__(self):
@@ -26,18 +17,28 @@ class Structure:
         self._newmann_conditions = dict()
         self._tolerance = 1e-7
 
-        self.load_factor = 0
+        self._load_factor_increment = 0.0
+        self._load_factor = 0.0
+        self._converged_load_factor = 0.0
+        self.length_increment = 0.4
 
         self._stiffness = None
         self._unbalanced_forces = None
         self._displacement_increment = None
+        self._displacement = None
 
     @property
     def tolerance(self):
         return self._tolerance
+
     @tolerance.setter
     def tolerance(self, value):
         self._tolerance = value
+
+    def set_section_tolerance(self, value):
+        for element in self.elements:
+            for section in element.sections:
+                section.tolerance = value
 
     @property
     def nodes(self):
@@ -53,10 +54,9 @@ class Structure:
     def get_element(self, element_id):
         return self._elements[element_id]
 
-
     def index_from_dof(self, dof):
         node_id, dof_type = dof
-        return 6*(node_id - 1) + DOF_INDEX_MAP[dof_type]
+        return 6 * (node_id - 1) + DOF_INDEX_MAP[dof_type]
 
     def dof_from_index(self, index):
         raise NotImplementedError
@@ -64,7 +64,6 @@ class Structure:
     @property
     def no_dofs(self):
         return len(self._nodes) * 6
-
 
     def add_node(self, node_id, x_pos, y_pos, z_pos):
         self._nodes[node_id] = Node(node_id, x_pos, y_pos, z_pos)
@@ -85,11 +84,11 @@ class Structure:
     def initialize(self):
         for element in self.elements:
             element.initialize()
-        # self.calculate_stiffness_matrix()
+        self._calculate_stiffness_matrix()
 
     @property
     def tangent_stiffness(self):
-        """ Last NR iterations """
+        """ Last NR iteration """
         return self._stiffness
 
     @tangent_stiffness.setter
@@ -112,6 +111,24 @@ class Structure:
     def displacement_increment(self, value):
         self._displacement_increment = value
 
+    @property
+    def current_displacement(self):
+        if self._displacement is None:
+            return np.zeros(self.no_dofs)
+        return self._displacement
+
+    @current_displacement.setter
+    def current_displacement(self, value):
+        self._displacement = value
+
+    # FIXME temp fix
+    @property
+    def force_vector(self):
+        controlled_dof = (2, "w")
+        force = np.zeros(self.no_dofs)
+        force[self.index_from_dof(controlled_dof)] = 1
+        return force
+
     def _calculate_stiffness_matrix(self):
         stiffness_matrix = np.zeros((self.no_dofs, self.no_dofs))
 
@@ -126,75 +143,103 @@ class Structure:
         forces = np.zeros(self.no_dofs)
         for condition in self._newmann_conditions.items():
             dof, value = condition
-            forces[self.index_from_dof(dof)] += self.load_factor * value
+            forces[self.index_from_dof(dof)] += self._load_factor * value
         return forces
 
     def _construct_unbalance_forces_first_iteration(self):
         self._unbalanced_forces = np.zeros(self.no_dofs)
         for condition in self._newmann_conditions.items():
             dof, value = condition
-            self._unbalanced_forces[self.index_from_dof(dof)] += value
+            self._unbalanced_forces[self.index_from_dof(dof)] += self._load_factor * value
 
     def solve(self, max_ele_iterations):
         """
         main solution loop until element convergence
+
+        steps 3-17
         """
-        if self._unbalanced_forces is None: #First NR iteration
+        # STEP 3
+        if self._unbalanced_forces is None:  # First NR iteration
             self._construct_unbalance_forces_first_iteration()
 
-        self._calculate_stiffness_matrix()
-
-        for condition in self._dirichlet_conditions.items():
-            dof, value = condition
+        dofs = self.no_dofs
+        lhs = np.zeros((dofs + 1, dofs + 1))
+        lhs[:dofs, :dofs] = self.tangent_stiffness
+        for dof, _ in self._dirichlet_conditions.items():
             i = self.index_from_dof(dof)
-            self.tangent_stiffness[:, i] = 0
-            self.tangent_stiffness[i, :] = 0
-            self.tangent_stiffness[i, i] = 1
-            self._unbalanced_forces[i] = value
+            lhs[:, i] = 0
+            lhs[i, :] = 0
+            lhs[i, i] = 1
 
-        change_in_displacement_increment = np.linalg.solve(
-            self.tangent_stiffness, self._unbalanced_forces
-        )
-        self.displacement_increment += change_in_displacement_increment
+        lhs[:dofs, -1] = -self.force_vector
+        lhs[-1, :dofs] = -self.force_vector
+        rhs = np.zeros(dofs + 1)
+        rhs[:dofs] = self._unbalanced_forces
+        rhs[-1] = self.force_vector @ self.displacement_increment - self.length_increment
 
+        change_in_increments = np.linalg.inv(lhs) @ rhs
+        self.displacement_increment += change_in_increments[:dofs]
+        self._load_factor_increment += change_in_increments[-1]
+        self._load_factor = self._converged_load_factor + self._load_factor_increment
+
+        # STEP 4
         for element in self.elements:
             indices = [self.index_from_dof(dof) for dof in element.dofs]
             element.calculate_displacement_increment_from_structure(
-                change_in_displacement_increment[indices]
+                change_in_increments[:dofs][indices]
             )
 
-        conv = False
-        for j in range(1, max_ele_iterations+1):
+        # STEP 5
+        for j in range(1, max_ele_iterations + 1):
             for element in self.elements:
+                # STEP 6 & 7
                 element.calculate_force_increment()
                 element.increment_resisting_forces()
-                element.update_stiffness()
+                # STEP 8-12
+                element.state_determination()
 
+            # STEPS 13-15
+            conv = True
             for element in self.elements:
-                conv += element.check_convergence()
+                conv *= element.check_convergence()
 
-            if conv:
-                debug(f"Elements have converged with {j} iteration(s).")
+            # STEP 17
+            if conv:  # all elements converged
+                self._calculate_stiffness_matrix()
+                for element in self.elements:
+                    element.displacement_residual = None
+                    for section in element.sections:
+                        section.residual = np.zeros(3)
+                print(f"Elements have converged with {j} iteration(s).")
                 break
 
+            # AAAND ... BACK TO STEP 6
             for element in self.elements:
-                element.update_chng_displacement_increment()
+                element.calculate_displacement_residuals()
 
             if j == max_ele_iterations:
                 warning(f"ELEMENTS DID NOT CONVERGE WITH {max_ele_iterations} ITERATIONS")
 
     def check_nr_convergence(self):
+        """ steps 18-20 """
         resisting_forces = np.zeros(self.no_dofs)
         for element in self.elements:
             f_e = element.l_e @ element.resisting_forces
             i = [self.index_from_dof(dof) for dof in element.dofs]
-            # stiffness_matrix[np.ix_(i, i)] = k_e
             resisting_forces[i] += f_e
 
         external_forces = self._calculate_force_vector()
+
         self._unbalanced_forces = external_forces - resisting_forces
+        for dof, value in self._dirichlet_conditions.items():
+            self._unbalanced_forces[self.index_from_dof(dof)] = value
+
         return abs(np.linalg.norm(self._unbalanced_forces)) < self._tolerance
 
-    def save_nr_iteration(self):
+    def finalize_load_step(self):
+        """ step 21 """
+        self.current_displacement += self.displacement_increment
+        self._displacement_increment = None
+        self._converged_load_factor = self._load_factor
         for element in self.elements:
-            element.save_nr_iteration()
+            element.finalize_load_step()

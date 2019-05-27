@@ -5,6 +5,7 @@ Author: Thomas Oberbichler
 
 import numpy as np
 
+
 class Node(object):
     """Three dimensional Node providing Dofs for displacements.
 
@@ -134,14 +135,14 @@ class Node(object):
         AttributeError
             If `dof_type` does not exist.
         """
-        if dof_type == 'u':
+        if dof_type == "u":
             return self.u
-        if dof_type == 'v':
+        if dof_type == "v":
             return self.v
-        if dof_type == 'w':
+        if dof_type == "w":
             return self.w
 
-        raise AttributeError(f"Node has no dof of type \'{dof_type}\'")
+        raise AttributeError(f"Node has no dof of type '{dof_type}'")
 
     def set_dof_state(self, dof_type, value):
         """Update the node according to the value of the given dof type.
@@ -158,11 +159,11 @@ class Node(object):
         AttributeError
             If `dof_type` does not exist.
         """
-        if dof_type == 'u':
+        if dof_type == "u":
             self.u = value
-        elif dof_type == 'v':
+        elif dof_type == "v":
             self.v = value
-        elif dof_type == 'w':
+        elif dof_type == "w":
             self.w = value
         else:
-            raise AttributeError(f"Node has no dof of type \'{dof_type}\'")
+            raise AttributeError(f"Node has no dof of type '{dof_type}'")

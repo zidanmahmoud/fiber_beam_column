@@ -37,7 +37,7 @@ class MenegottoPintoModel(object):
         To determine whether the stress state is beyond elastic region.
     """
 
-    def __init__(self, youngs_modulus, asymtopic_modulus, yield_stress, R0, a1, a2):
+    def __init__(self, id, youngs_modulus, asymtopic_modulus, yield_stress, R0, a1, a2):
         """
         Create a new material.
 
@@ -52,6 +52,7 @@ class MenegottoPintoModel(object):
         yield_stress : float
         """
 
+        self.id = id
         self.youngs_modulus = youngs_modulus
         self.asymtopic_modulus = asymtopic_modulus
         self.yield_stress = yield_stress
@@ -148,7 +149,13 @@ class MenegottoPintoModel(object):
 
         self.material_strain = 0.
 
-    def update_material_strain(self):
+    def update_material_strain(self, print_):
+
+        # if print_:
+        #     print('update_material_strain called')
+        #     print('material_strain_last_loadstep', self.material_strain_last_loadstep)
+        #     print('material_strain_incr', self.material_strain_incr)
+        #     print('material_strain', self.material_strain)
 
         self.material_strain = self.material_strain_last_loadstep + self.material_strain_incr
 
@@ -232,7 +239,7 @@ class MenegottoPintoModel(object):
          cosi
 
     '''
-    def update_model_parameters(self, nz):
+    def update_model_parameters(self, nz, print_):
 
         E = self.youngs_modulus
         b = self.b

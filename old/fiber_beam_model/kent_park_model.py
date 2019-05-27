@@ -1,7 +1,8 @@
-from .material import Material
+import numpy as np
 
+TOLERANCE_COMPARISON = 1e-10
 
-class KentParkModel(Material):
+class KentParkModel(object):
     """
     Material KentParkModel provides the constitutive model for concretes.
 
@@ -44,7 +45,7 @@ class KentParkModel(Material):
     material_tangent_modulus : float
     """
 
-    def __init__(self, compressive_strength, confinement_factor, epu, Z):
+    def __init__(self, id, compressive_strength, confinement_factor, epu, Z):
         """
         Create a new material.
 
@@ -65,9 +66,10 @@ class KentParkModel(Material):
             Softening slope
         """
 
+        self.id = id
         self.compressive_strength = compressive_strength
         self.confinement_factor = confinement_factor
-        self.ep0 = -0.0027 * confinement_factor
+        self.ep0 = -0.0027*confinement_factor
         self.epu = epu
         self.Z = Z
 
@@ -75,29 +77,28 @@ class KentParkModel(Material):
         self.sgr = 0
         self.epp = 0
 
-        self.change_in_material_strain_incr = 0.0
-        self.last_loadstep_material_strain_incr = 0.0
-        self.material_strain_last_loadstep = 0.0
-        self.material_stress_last_loadstep = 0.0
-        self.material_strain_incr = 0.0
-        self.material_strain = 0.0
-        self.material_PEEQ = 0.0
-        self.material_stress = 0.0
-        self.material_tangent_modulus = (
-            -2 * self.compressive_strength * self.confinement_factor / self.ep0
-        )
-        self.direction = 0.0
+        self.change_in_material_strain_incr = 0.
+        self.last_loadstep_material_strain_incr = 0.
+        self.material_strain_last_loadstep = 0.
+        self.material_stress_last_loadstep = 0.
+        self.material_strain_incr = 0.
+        self.material_strain = 0.
+        self.material_PEEQ = 0.
+        self.material_stress = 0.
+        self.material_tangent_modulus = -2 * self.compressive_strength * self.confinement_factor / self.ep0
+        self.direction = 0.
 
-    ################################################################################
-    ################################################################################
-    """
+
+################################################################################
+################################################################################
+    '''
     The first block implements functions for attributes
     which are referred in the steps :
     To get value
     To initialize value
     To update value
-    """
-    ################################################################################
+    '''
+################################################################################
     def get_change_in_material_strain_incr(self):
 
         return self.change_in_material_strain_incr
@@ -122,42 +123,41 @@ class KentParkModel(Material):
         elif nz <= 4:
             self.direction = 1
 
-    """
+
+    '''
     material_strain_incr :
          If i == 1 and j == 1: it is initialized to be zero
          Else: it is updated from change_in_fiber_strain_incr
 
          Function needed:
          change_in_fiber_strain_incr
-    """
-
+    '''
     def get_material_strain_incr(self):
 
         return self.material_strain_incr
 
     def initialize_material_strain_incr(self):
 
-        self.material_strain_incr = 0.0
+        self.material_strain_incr = 0.
 
     def update_material_strain_incr(self):
 
         self.material_strain_incr += self.change_in_material_strain_incr
 
-    """
+    '''
     material_strain :
 
          It is updated from material_strain_incr
-    """
-
+    '''
     def get_material_strain(self):
 
         return self.material_strain
 
     def initialize_material_strain(self):
 
-        self.material_strain = 0.0
+        self.material_strain = 0.
 
-    def update_material_strain(self):
+    def update_material_strain(self, print_):
 
         self.material_strain = self.material_strain_last_loadstep + self.material_strain_incr
 
@@ -167,7 +167,7 @@ class KentParkModel(Material):
             self.material_strain_last_loadstep = self.material_strain
             self.material_stress_last_loadstep = self.material_stress
 
-    """
+    '''
     material_stress :
 
          It is calculated from
@@ -175,65 +175,62 @@ class KentParkModel(Material):
 
          Function needed:
          calculate_material_stress()
-    """
-
+    '''
     def get_material_stress(self):
 
         return self.material_stress
 
     def initialize_material_stress(self):
 
-        self.material_stress = 0.0
+        self.material_stress = 0.
 
     def update_material_stress(self):
 
         self.material_stress = self.calculate_material_stress()
 
-    """
+
+    '''
     material_tangent_modulus :
 
          Function needed:
          calculate_material_tangent_modulus()
-    """
-
+    '''
     def get_material_tangent_modulus(self):
 
         return self.material_tangent_modulus
 
     def initialize_material_tangent_modulus(self):
 
-        self.material_tangent_modulus = (
-            -2 * self.compressive_strength * self.confinement_factor / self.ep0
-        )
+        self.material_tangent_modulus = -2 * self.compressive_strength * self.confinement_factor / self.ep0
 
     def update_material_tangent_modulus(self):
 
         self.material_tangent_modulus = self.calculate_material_tangent_modulus()
 
-    """
+
+    '''
     epp :
 
          Function needed:
          calculate_material_cosi()
-    """
-
+    '''
     def get_epp(self):
 
         return self.epp
 
     def initialize_epp(self):
 
-        self.epp = 0.0
+        self.epp = 0.
 
     def update_epp(self):
 
-        critical_point = self.epr / self.ep0
+        critical_point = self.epr /self.ep0
         if critical_point < 2 and critical_point > 0:
-            self.epp = self.ep0 * (0.145 * critical_point ** 2 + 0.13 * critical_point)
+            self.epp = self.ep0 * (0.145 * critical_point**2 + 0.13 * critical_point)
         elif critical_point >= 2:
             self.epp = self.ep0 * (0.707 * (critical_point - 2) + 0.834)
 
-    """
+    '''
     Update model parameters:
 
          ep0
@@ -243,9 +240,8 @@ class KentParkModel(Material):
          R
          cosi
 
-    """
-
-    def update_model_parameters(self, nz):
+    '''
+    def update_model_parameters(self, nz, print_):
 
         if self.material_strain < 0:
             self.epr = self.material_strain_last_loadstep
@@ -253,29 +249,32 @@ class KentParkModel(Material):
             self.update_epp()
         print_ = False
         if print_:
-            print("epr = ", self.epr)
-            print("sgr = ", self.sgr)
-            print("epp = ", self.epp)
-            print("last_loadstep_material_strain_incr = ", self.last_loadstep_material_strain_incr)
-            print("material_strain_incr = ", self.material_strain_incr)
-            print("material_strain = ", self.material_strain)
+            print('epr = ', self.epr)
+            print('sgr = ', self.sgr)
+            print('epp = ', self.epp)
+            print('last_loadstep_material_strain_incr = ', self.last_loadstep_material_strain_incr)
+            print('material_strain_incr = ', self.material_strain_incr)
+            print('material_strain = ', self.material_strain)
 
-    """
+    '''
     other:
-    """
+    '''
+    def get_material_id(self):
+
+        return self.id
 
     def get_material_PEEQ(self):
 
         return self.epp
 
-    ################################################################################
-    ################################################################################
-    """
+################################################################################
+################################################################################
+    '''
     The second block provides :
     functions which are needed in the first block.
-    """
-    ################################################################################
-    def check_reversal(self, do_reversal, j, nx, ny, nz):
+    '''
+################################################################################
+    def check_reversal(self, do_reversal, j, print_, nx,ny,nz):
         print_ = False
 
         if do_reversal and (j == 1):
@@ -283,18 +282,45 @@ class KentParkModel(Material):
         else:
             reversal = False
 
+        if print_:
+            if nx == -1.0 and ny == 0 and nz == 0:
+                print('hand check')
+                print('last_loadstep_material_strain_incr = ', self.last_loadstep_material_strain_incr)
+                print('material_strain_incr = ', self.material_strain_incr)
+                print('material_strain = ', self.material_strain)
+                print(reversal)
+
+
+
         return reversal
 
     def check_load(self):
 
         loading = True
         loading *= self.material_strain_incr < 0
+        #if self.last_NR_change_in_material_strain_incr > 0:
+            #print('********************************************************')
+            #print('********************************************************')
+            #print('********************************************************')
+            #print('********************************************************')
+            #print('last_NR_change_in_material_strain_incr = ', self.last_NR_change_in_material_strain_incr)
         return loading
 
-    def print_warning(self, nx, ny, nz):
+    def print_warning(self, nx,ny,nz):
 
         eps = self.material_strain
         epr = self.epr
+        if eps <= epr:
+            '''
+            if not self.check_load():
+                print('section', nx)
+                print('ny, nz = ', ny, ',', nz)
+                print('change_in_material_strain_incr', self.change_in_material_strain_incr)
+                print('warning: strain exceeds reverse point.')
+                print('epr = ',epr)
+                print('eps = ',eps)
+            '''
+
 
     def calculate_material_stress(self):
 
@@ -308,18 +334,21 @@ class KentParkModel(Material):
         epp = self.epp
         epu = self.epu
         if self.check_load():
+            #print('it is loading')
             if eps > epp:
                 sg = 0
             elif eps > epr and eps < epp:
-                sg = sgr / (epr - epp) * (eps - epr) + sgr
+                sg = sgr / (epr -epp) * (eps - epr) + sgr
             elif eps <= epr:
+                #print('on model')
+                #print('epu= ', epu)
                 if eps > 0:
                     sg = 0
                 elif eps > ep0:
-                    sg = K * fc * (-2 * (eps / ep0) + (eps / ep0) ** 2)
+                    sg = K*fc*(-2*(eps/ep0) + (eps/ep0)**2)
                 elif eps > epu:
-                    sg = K * fc * (-1 - Z * (eps - ep0))
-                    sg = sg * (sg < -0.2 * K * fc) + -0.2 * K * fc * (sg >= -0.2 * K * fc)
+                    sg = K*fc*(-1 - Z*(eps - ep0))
+                    sg = sg * (sg < -0.2*K*fc) + -0.2*K*fc * (sg >= -0.2*K*fc)
                 else:
                     sg = 0
         else:
@@ -327,15 +356,15 @@ class KentParkModel(Material):
                 if eps > 0:
                     sg = 0
                 elif eps > ep0:
-                    sg = K * fc * (-2 * (eps / ep0) + (eps / ep0) ** 2)
+                    sg = K*fc*(-2*(eps/ep0) + (eps/ep0)**2)
                 elif eps > epu:
-                    sg = K * fc * (-1 - Z * (eps - ep0))
-                    sg = sg * (sg < -0.2 * K * fc) + -0.2 * K * fc * (sg >= -0.2 * K * fc)
+                    sg = K*fc*(-1 - Z*(eps - ep0))
+                    sg = sg * (sg < -0.2*K*fc) + -0.2*K*fc * (sg >= -0.2*K*fc)
                 else:
                     sg = 0
 
             elif eps < epp:
-                sg = sgr / (epr - epp) * (eps - epr) + sgr
+                sg = sgr / (epr -epp) * (eps - epr) + sgr
             else:
                 sg = 0
 
@@ -356,15 +385,15 @@ class KentParkModel(Material):
             if eps > epp:
                 Et = 0
             elif eps > epr and eps < epp:
-                Et = sgr / (epr - epp)
+                Et = sgr / (epr -epp)
             elif eps <= epr:
                 if eps > 0:
                     Et = 0
                 elif eps > ep0:
-                    Et = K * fc * (-(2 / ep0) + (eps / ep0) * 2 / ep0)
+                    Et = K*fc*(-(2/ep0) + (eps/ep0)*2/ep0)
                 elif eps > epu:
-                    sg = K * fc * (-1 - Z * (eps - ep0))
-                    Et = -K * fc * Z * (sg < -0.2 * K * fc)
+                    sg = K*fc*(-1 - Z*(eps - ep0))
+                    Et = -K*fc*Z * (sg < -0.2*K*fc)
                 else:
                     Et = 0
         else:
@@ -373,14 +402,14 @@ class KentParkModel(Material):
                 if eps > 0:
                     Et = 0
                 elif eps > ep0:
-                    Et = K * fc * (-(2 / ep0) + (eps / ep0) * 2 / ep0)
+                    Et = K*fc*(-(2/ep0) + (eps/ep0)*2/ep0)
                 elif eps > epu:
-                    sg = K * fc * (-1 - Z * (eps - ep0))
-                    Et = -K * fc * Z * (sg < -0.2 * K * fc)
+                    sg = K*fc*(-1 - Z*(eps - ep0))
+                    Et = -K*fc*Z * (sg < -0.2*K*fc)
                 else:
                     Et = 0
             elif eps < epp:
-                Et = sgr / (epr - epp)
+                Et = sgr / (epr -epp)
             else:
                 Et = 0
 
