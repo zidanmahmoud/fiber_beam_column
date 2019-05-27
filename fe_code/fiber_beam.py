@@ -163,8 +163,6 @@ class FiberBeam(Element):
         conv = True
         for section in self.sections:
             conv *= section.check_convergence()
-            # print(section.forces)
-        # input()
         return conv
 
     def calculate_displacement_residuals(self):

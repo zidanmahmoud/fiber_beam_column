@@ -27,13 +27,14 @@ class Structure:
 
         self._load_factor_increment = 0.0
         self._load_factor = 0.0
-        self._converged_load_factor = 0.0
+        self.converged_load_factor = 0.0
         self.length_increment = 0.4
 
         self._stiffness = None
         self._unbalanced_forces = None
         self._displacement_increment = None
         self._displacement = None
+        self.converged_displacement = None
 
     @property
     def tolerance(self):
@@ -112,16 +113,6 @@ class Structure:
     def displacement_increment(self, value):
         self._displacement_increment = value
 
-    @property
-    def current_displacement(self):
-        if self._displacement is None:
-            return np.zeros(self.no_dofs)
-        return self._displacement
-
-    @current_displacement.setter
-    def current_displacement(self, value):
-        self._displacement = value
-
     # FIXME temp fix
     @property
     def force_vector(self):
@@ -162,6 +153,8 @@ class Structure:
         # STEP 3
         if self._unbalanced_forces is None:  # First NR iteration
             self._construct_unbalance_forces_first_iteration()
+        if self.converged_displacement is None:
+            self.converged_displacement = np.zeros(self.no_dofs)
 
         dofs = self.no_dofs
         lhs = np.zeros((dofs + 1, dofs + 1))
@@ -178,10 +171,11 @@ class Structure:
         rhs[:dofs] = self._unbalanced_forces
         rhs[-1] = self.force_vector @ self.displacement_increment - self.length_increment
 
-        change_in_increments = np.linalg.inv(lhs) @ rhs
+        change_in_increments = np.linalg.solve(lhs, rhs)
         self.displacement_increment += change_in_increments[:dofs]
         self._load_factor_increment += change_in_increments[-1]
-        self._load_factor = self._converged_load_factor + self._load_factor_increment
+        self._displacement = self.converged_displacement + self._displacement_increment
+        self._load_factor = self.converged_load_factor + self._load_factor_increment
 
         # STEP 4
         for element in self.elements:
@@ -211,7 +205,7 @@ class Structure:
                     element.displacement_residual = None
                     for section in element.sections:
                         section.residual = np.zeros(3)
-                print(f"Elements have converged with {j} iteration(s).")
+                print(f"Elements converged with {j} iteration(s).")
                 break
 
             # AAAND ... BACK TO STEP 6
@@ -239,8 +233,8 @@ class Structure:
 
     def finalize_load_step(self):
         """ step 21 """
-        self.current_displacement += self.displacement_increment
         self._displacement_increment = None
-        self._converged_load_factor = self._load_factor
+        self.converged_displacement = self._displacement
+        self.converged_load_factor = self._load_factor
         for element in self.elements:
             element.finalize_load_step()

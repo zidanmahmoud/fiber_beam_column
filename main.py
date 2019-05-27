@@ -1,6 +1,9 @@
 """main"""
+import numpy as np
+import matplotlib.pyplot as plt
 import fe_code
 from fe_code.io import warning
+from fe_code.structure import index_from_dof
 
 # == MODELING PARAMETERS
 LENGTH = 100.0
@@ -74,6 +77,8 @@ def main():
     stru.initialize()
     print(":: Initialized the solver ::")
 
+    load = [0]
+    disp = [0]
     print("\n:: Starting solution loop ::")
     for k in range(1, 10 + 1):
         print(f"\nLOAD STEP : {k}")
@@ -91,6 +96,20 @@ def main():
 
         stru.finalize_load_step()
 
+        load.append(stru.converged_load_factor)
+        disp.append(stru.converged_displacement[index_from_dof(controled_dof)])
+
+    _, axes = plt.subplots()
+    load = 100 * np.array(load)
+    disp = 1/10000*3 * np.array(disp)
+    axes.plot(0, 0, 'yo')
+    axes.plot(disp, load)
+    axes.set(
+        xlabel='curvature (rad/in)',
+        ylabel='moment (kip*in)'
+    )
+    axes.grid(True)
+    plt.show()
 
 if __name__ == "__main__":
     main()
