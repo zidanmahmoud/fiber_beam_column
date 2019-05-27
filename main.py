@@ -119,7 +119,7 @@ def main():
     load = 100 * np.array(load)
     disp = 1/10000*3 * np.array(disp)
     axes.plot(0, 0, 'yo')
-    axes.plot(disp, load, "-o", mfc="none")
+    axes.plot(disp, load)
     axes.set(
         xlabel='curvature (rad/in)',
         ylabel='moment (kip*in)'
