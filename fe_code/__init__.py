@@ -4,13 +4,11 @@ Module fe_code
 """
 
 import sys
-import numpy
 
 from .structure import Structure
 from .kent_park_model import KentParkModel
 from .menegotto_pinto_model import MenegottoPintoModel
 
-numpy.set_printoptions(linewidth=1000, floatmode="unique")
 if sys.version_info < (3, 6):
     raise RuntimeError("The fiber beam-column module requires at least Python 3.6!")
 

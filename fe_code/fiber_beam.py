@@ -18,10 +18,10 @@ class FiberBeam(Element):
 
         self._local_stiffness_matrix = np.zeros((5, 5))
 
-        self.chng_disp_incr = None
-        self.chng_force_increment = None
-        self._displacement_increment = None
-        self._force_increment = None
+        self._chng_disp_incr = np.zeros(5)
+        self._chng_force_increment = np.zeros(5)
+        self._displacement_increment = np.zeros(5)
+        self._force_increment = np.zeros(5)
         self.converged_resisting_forces = np.zeros(5)
         self.resisting_forces = np.zeros(5)
         self.displacement_residual = None
@@ -103,51 +103,28 @@ class FiberBeam(Element):
         return reference_transform_matrix
 
     @property
-    def displacement_increment(self):
-        if self._displacement_increment is None:
-            return np.zeros(5)
-        return self._displacement_increment
-
-    @displacement_increment.setter
-    def displacement_increment(self, value):
-        self._displacement_increment = value
-
-    @property
-    def force_increment(self):
-        if self._force_increment is None:
-            return np.zeros(5)
-        return self._force_increment
-
-    @force_increment.setter
-    def force_increment(self, value):
-        self._force_increment = value
-
-    @property
     def l_e(self):
         return self._calculate_transform_matrix()
 
     def calculate_displacement_increment_from_structure(self, structure_chng_disp_incr):
         """step 4"""
         l_e = self._calculate_transform_matrix()
-        self.chng_disp_incr = l_e.T @ structure_chng_disp_incr
-        self.displacement_increment += self.chng_disp_incr
+        self._chng_disp_incr = l_e.T @ structure_chng_disp_incr
+        self._displacement_increment += self._chng_disp_incr
 
-    def calculate_force_increment(self):
+    def calculate_forces(self):
         """ steps 6 & 7 """
         if self.displacement_residual is None:
-            self.chng_force_increment = self._local_stiffness_matrix @ self.chng_disp_incr
+            self._chng_force_increment = self._local_stiffness_matrix @ self._chng_disp_incr
         else:
-            self.chng_force_increment = -self._local_stiffness_matrix @ self.displacement_residual
-        self.force_increment += self.chng_force_increment
-
-    def increment_resisting_forces(self):
-        """ step 7 """
-        self.resisting_forces = self.converged_resisting_forces + self.force_increment
+            self._chng_force_increment = -self._local_stiffness_matrix @ self.displacement_residual
+        self._force_increment += self._chng_force_increment
+        self.resisting_forces = self.converged_resisting_forces + self._force_increment
 
     def state_determination(self):
         """ steps 8-12 """
         for section in self.sections:
-            section.calculate_force_increment_from_element(self.chng_force_increment)
+            section.calculate_force_increment_from_element(self._chng_force_increment)
             section.increment_section_forces()
             section.calculate_deformation_increment()
             section.calculate_fiber_deformation_increment()
@@ -186,11 +163,11 @@ class FiberBeam(Element):
             )
 
     def finalize_load_step(self):
-        self._force_increment = None
-        self._displacement_increment = None
+        self._displacement_increment = np.zeros(5)
+        self._force_increment = np.zeros(5)
+        for section in self.sections:
+            section.finalize_load_step()
         self.converged_resisting_forces = self.resisting_forces
-        # for section in self.sections:
-        #     section.finalize_load_step()
 
 
 def _calculate_b_matrix(gauss_point):

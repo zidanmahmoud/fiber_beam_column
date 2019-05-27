@@ -21,8 +21,10 @@ class Section:
 
         self.stiffness_matrix = np.zeros((3, 3))
 
-        self._force_increment = None
-        self._deformation_increment = None
+        self.chng_def_increment = np.zeros(3)
+        self._chng_force_increment = np.zeros(3)
+        self._deformation_increment = np.zeros(3)
+        self._force_increment = np.zeros(3)
         self.converged_section_forces = np.zeros(3)
         self.forces = np.zeros(3)
         self.unbalance_forces = np.zeros(3)
@@ -56,28 +58,6 @@ class Section:
             fiber.initialize()
         self.update_stiffness_matrix()
 
-    @property
-    def force_increment(self):
-        """force increment vector"""
-        if self._force_increment is None:
-            return np.zeros(3)
-        return self._force_increment
-
-    @force_increment.setter
-    def force_increment(self, value):
-        self._force_increment = value
-
-    @property
-    def deformation_increment(self):
-        """deformation_increment vector"""
-        if self._deformation_increment is None:
-            return np.zeros(3)
-        return self._deformation_increment
-
-    @deformation_increment.setter
-    def deformation_increment(self, value):
-        self._deformation_increment = value
-
     def update_stiffness_matrix(self):
         """section stiffness matrix
         """
@@ -89,22 +69,22 @@ class Section:
     def calculate_force_increment_from_element(self, ele_chng_force_increment):
         """ step 8 """
         b_matrix = _calculate_b_matrix(self.position)
-        self.chng_force_increment = b_matrix @ ele_chng_force_increment
-        self.force_increment += self.chng_force_increment
+        self._chng_force_increment = b_matrix @ ele_chng_force_increment
+        self._force_increment += self._chng_force_increment
 
     def increment_section_forces(self):
         """ step 8 """
-        self.forces = self.converged_section_forces + self.force_increment
+        self.forces = self.converged_section_forces + self._force_increment
 
     def calculate_deformation_increment(self):
         """ step 9 """
         f_e = np.linalg.inv(self.stiffness_matrix)
-        self.chng_def_increment = self.residual + f_e @ self.chng_force_increment
-        self.deformation_increment += self.chng_def_increment
+        self.chng_def_increment = self.residual + f_e @ self._chng_force_increment
+        self._deformation_increment += self.chng_def_increment
 
     def calculate_fiber_deformation_increment(self):
         """ step 10 """
-        for i, fiber in enumerate(self.fibers):
+        for fiber in self.fibers:
             fiber.calculate_strain_increment_from_section(self.chng_def_increment)
             fiber.increment_strain()
             fiber.calculate_stress()
@@ -112,7 +92,7 @@ class Section:
     def check_convergence(self):
         """ steps 13-15 """
         resisting_forces = np.zeros(3)
-        for i, fiber in enumerate(self.fibers):
+        for fiber in self.fibers:
             resisting_forces += fiber.stress * fiber.area * fiber.direction
         self.unbalance_forces = self.forces - resisting_forces
         return abs(np.linalg.norm(self.unbalance_forces)) < self._tolerance
@@ -120,12 +100,19 @@ class Section:
     def calculate_displacement_residuals(self):
         self.residual = np.linalg.inv(self.stiffness_matrix) @ self.unbalance_forces
 
-    def save_nr_iteration(self):
-        self._force_increment = None
-        self._deformation_increment = None
+    # def save_nr_iteration(self):
+    #     self._force_increment = None
+    #     self._deformation_increment = None
+    #     self.converged_section_forces = self.forces
+    #     for fiber in self.fibers:
+    #         fiber.save_nr_iteration()
+
+    def finalize_load_step(self):
         self.converged_section_forces = self.forces
+        self._deformation_increment = np.zeros(3)
+        self._force_increment = np.zeros(3)
         for fiber in self.fibers:
-            fiber.save_nr_iteration()
+            fiber.finalize_load_step()
 
 
 def _calculate_b_matrix(gauss_point):

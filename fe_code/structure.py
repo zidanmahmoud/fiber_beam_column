@@ -84,34 +84,16 @@ class Structure:
             self._newmann_conditions[dof] = value
 
     def initialize(self):
+        self._stiffness = np.zeros((self.no_dofs, self.no_dofs))
+        self._displacement_increment = np.zeros(self.no_dofs)
+        self._unbalanced_forces = np.zeros(self.no_dofs)
+        self._displacement_increment = np.zeros(self.no_dofs)
+        self._displacement = np.zeros(self.no_dofs)
+        self.converged_displacement = np.zeros(self.no_dofs)
+
         for element in self.elements:
             element.initialize()
         self._calculate_stiffness_matrix()
-
-    @property
-    def tangent_stiffness(self):
-        """ Last NR iteration """
-        return self._stiffness
-
-    @tangent_stiffness.setter
-    def tangent_stiffness(self, value):
-        if isinstance(value, np.ndarray):
-            if value.shape == (self.no_dofs, self.no_dofs):
-                self._stiffness = value
-            else:
-                raise ValueError("Structure stiffness is of wrong shape.")
-        else:
-            raise ValueError("Structure stiffness must be a numpy.ndarray")
-
-    @property
-    def displacement_increment(self):
-        if self._displacement_increment is None:
-            return np.zeros(self.no_dofs)
-        return self._displacement_increment
-
-    @displacement_increment.setter
-    def displacement_increment(self, value):
-        self._displacement_increment = value
 
     # FIXME temp fix
     @property
@@ -127,9 +109,9 @@ class Structure:
         for element in self.elements:
             k_e = element.calculate_global_stiffness_matrix()
             i = [index_from_dof(dof) for dof in element.dofs]
-            stiffness_matrix[np.ix_(i, i)] = k_e
+            stiffness_matrix[np.ix_(i, i)] = k_e  # stiffness_matrix[i][:i] = k_e
 
-        self.tangent_stiffness = stiffness_matrix
+        self._stiffness = stiffness_matrix
 
     def _calculate_force_vector(self):
         forces = np.zeros(self.no_dofs)
@@ -150,29 +132,24 @@ class Structure:
 
         steps 3-17
         """
-        # STEP 3
-        if self._unbalanced_forces is None:  # First NR iteration
-            self._construct_unbalance_forces_first_iteration()
-        if self.converged_displacement is None:
-            self.converged_displacement = np.zeros(self.no_dofs)
-
         dofs = self.no_dofs
         lhs = np.zeros((dofs + 1, dofs + 1))
-        lhs[:dofs, :dofs] = self.tangent_stiffness
-        for dof, _ in self._dirichlet_conditions.items():
-            i = index_from_dof(dof)
-            lhs[:, i] = 0
-            lhs[i, :] = 0
-            lhs[i, i] = 1
+        lhs[:dofs, :dofs] = self._stiffness
+        for dof, value in self._dirichlet_conditions.items():
+            if value == 0:
+                i = index_from_dof(dof)
+                lhs[:, i] = 0
+                lhs[i, :] = 0
+                lhs[i, i] = 1
 
         lhs[:dofs, -1] = -self.force_vector
         lhs[-1, :dofs] = -self.force_vector
         rhs = np.zeros(dofs + 1)
         rhs[:dofs] = self._unbalanced_forces
-        rhs[-1] = self.force_vector @ self.displacement_increment - self.length_increment
+        rhs[-1] = self.force_vector @ self._displacement_increment - self.length_increment
 
         change_in_increments = np.linalg.solve(lhs, rhs)
-        self.displacement_increment += change_in_increments[:dofs]
+        self._displacement_increment += change_in_increments[:dofs]
         self._load_factor_increment += change_in_increments[-1]
         self._displacement = self.converged_displacement + self._displacement_increment
         self._load_factor = self.converged_load_factor + self._load_factor_increment
@@ -188,8 +165,7 @@ class Structure:
         for j in range(1, max_ele_iterations + 1):
             for element in self.elements:
                 # STEP 6 & 7
-                element.calculate_force_increment()
-                element.increment_resisting_forces()
+                element.calculate_forces()
                 # STEP 8-12
                 element.state_determination()
 
@@ -222,19 +198,25 @@ class Structure:
             f_e = element.l_e @ element.resisting_forces
             i = [index_from_dof(dof) for dof in element.dofs]
             resisting_forces[i] += f_e
+        for dof, value in self._dirichlet_conditions.items():
+            if value == 0:
+                resisting_forces[index_from_dof(dof)] = value
 
         external_forces = self._calculate_force_vector()
 
         self._unbalanced_forces = external_forces - resisting_forces
-        for dof, value in self._dirichlet_conditions.items():
-            self._unbalanced_forces[index_from_dof(dof)] = value
 
         return abs(np.linalg.norm(self._unbalanced_forces)) < self._tolerance
 
     def finalize_load_step(self):
         """ step 21 """
-        self._displacement_increment = None
+        self._displacement_increment = np.zeros(self.no_dofs)
+        self._load_factor_increment = 0.0
         self.converged_displacement = self._displacement
         self.converged_load_factor = self._load_factor
         for element in self.elements:
             element.finalize_load_step()
+
+    def new_loading(self, length_incr, controled_displacement):
+        self.length_increment = length_incr
+        self._dirichlet_conditions[(2, "w")] = controled_displacement

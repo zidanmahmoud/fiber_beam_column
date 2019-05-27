@@ -62,6 +62,13 @@ class Fiber:
         """ step 11 """
         self.stress = self._material_class.get_material_stress()
 
-    def save_nr_iteration(self):
-        self._strain_increment = None
+    # def save_nr_iteration(self):
+    #     self._strain_increment = None
+    #     self.converged_strain = self.strain
+
+    def finalize_load_step(self):
+        self._material_class.save_to_last_loadstep_material_strain_incr(True)
+        self._material_class.save_to_material_strain_last_loadstep(True)
         self.converged_strain = self.strain
+        self._material_class.initialize_material_strain_incr()
+        self.strain_increment = 0.0

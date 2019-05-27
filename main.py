@@ -66,9 +66,9 @@ def main():
     # BOUNDARY CONDITIONS
     controled_dof = (2, "w")
     stru.add_neumann_condition(controled_dof[0], controled_dof[1], 1.0)
-    stru.add_dirichlet_condition(1, "uvwxyz", 0.0)
-    stru.add_dirichlet_condition(2, "x", 0.0)
-    # stru.add_dirichlet_condition(2, "w", 0.005)
+    stru.add_dirichlet_condition(1, "uvwxyz", 0)
+    stru.add_dirichlet_condition(2, "x", 0)
+    stru.add_dirichlet_condition(2, "w", 0.005)
     print("Added the boundary conditions.")
 
     max_nr_iterations = 100
@@ -84,13 +84,10 @@ def main():
         print(f"\nLOAD STEP : {k}")
 
         for i in range(1, max_nr_iterations + 1):
-
             stru.solve(max_ele_iterations)
-
             if stru.check_nr_convergence():
                 print(f"NR converged with {i} iteration(s).")
                 break
-
             if i == max_nr_iterations:
                 warning(f"Newton-Raphson did not converge {max_nr_iterations} iterations")
 
@@ -99,11 +96,32 @@ def main():
         load.append(stru.converged_load_factor)
         disp.append(stru.converged_displacement[index_from_dof(controled_dof)])
 
+    # for k in range(10 + 1, 30 + 1):
+    #     print(f"\nLOAD STEP : {k}")
+
+    #     if k == 10 + 1:
+    #         stru.new_loading(-0.01 * 0.4, 1e-20)
+    #     else:
+    #         stru.new_loading(-0.4, 1e-20)
+
+    #     for i in range(1, max_nr_iterations + 1):
+    #         stru.solve(max_ele_iterations)
+    #         if stru.check_nr_convergence():
+    #             print(f"NR converged with {i} iteration(s).")
+    #             break
+    #         if i == max_nr_iterations:
+    #             warning(f"Newton-Raphson did not converge {max_nr_iterations} iterations")
+
+    #     stru.finalize_load_step()
+
+    #     load.append(stru.converged_load_factor)
+    #     disp.append(stru.converged_displacement[index_from_dof(controled_dof)])
+
     _, axes = plt.subplots()
     load = 100 * np.array(load)
     disp = 1/10000*3 * np.array(disp)
     axes.plot(0, 0, 'yo')
-    axes.plot(disp, load)
+    axes.plot(disp, load, "-o", mfc="none")
     axes.set(
         xlabel='curvature (rad/in)',
         ylabel='moment (kip*in)'
