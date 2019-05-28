@@ -72,3 +72,6 @@ class Fiber:
         self.converged_strain = self.strain
         self._material_class.initialize_material_strain_incr()
         self.strain_increment = 0.0
+
+    def reverse_loading(self):
+        self._first_iteration = True

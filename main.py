@@ -68,7 +68,7 @@ def main():
     stru.add_neumann_condition(controled_dof[0], controled_dof[1], 1.0)
     stru.add_dirichlet_condition(1, "uvwxyz", 0)
     stru.add_dirichlet_condition(2, "x", 0)
-    stru.add_dirichlet_condition(2, "w", 0.005)
+    # stru.add_dirichlet_condition(2, "w", 0.005)
     print("Added the boundary conditions.")
 
     max_nr_iterations = 100
@@ -83,23 +83,19 @@ def main():
     for k in range(1, 55 + 1):
         print(f"\nLOAD STEP : {k}")
 
-        if k == 10 + 1:
+        if k < 10 + 1:
+            stru.new_loading(0.4, 0.005)
+        elif k == 10 + 1:
             stru.new_loading(-0.01 * 0.4, 1e-20)
             if i == 1:
-                for element in stru.elements:
-                    for section in element.sections:
-                        for fiber in section.fibers:
-                            fiber._first_iteration = True
-        elif k > 10 + 1 and k < 30 + 1:
+                stru.reverse_loading()
+        elif k < 30 + 1:
             stru.new_loading(-0.4, 1e-20)
-        elif k == 30 + 1 :
+        elif k == 30 + 1:
             stru.new_loading(0.01 * 0.04, 1e-20)
             if i == 1:
-                for element in stru.elements:
-                    for section in element.sections:
-                        for fiber in section.fibers:
-                            fiber._first_iteration = True
-        elif k > 30 + 1 and k < 55 + 1:
+                stru.reverse_loading()
+        elif k < 55 + 1:
             stru.new_loading(0.4, 1e-20)
 
         for i in range(1, max_nr_iterations + 1):

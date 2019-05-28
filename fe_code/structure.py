@@ -217,6 +217,12 @@ class Structure:
         for element in self.elements:
             element.finalize_load_step()
 
+    def reverse_loading(self):
+        for element in self.elements:
+            for section in element.sections:
+                for fiber in section.fibers:
+                    fiber.reverse_loading()
+
     def new_loading(self, length_incr, controled_displacement):
         self.length_increment = length_incr
         self._dirichlet_conditions[(2, "w")] = controled_displacement
