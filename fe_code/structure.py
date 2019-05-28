@@ -25,6 +25,8 @@ class Structure:
         self._newmann_conditions = dict()
         self._tolerance = 1e-7
 
+        self.controled_dof = None
+
         self._load_factor_increment = 0.0
         self._load_factor = 0.0
         self.converged_load_factor = 0.0
@@ -217,7 +219,7 @@ class Structure:
         for element in self.elements:
             element.finalize_load_step()
 
-    def reverse_loading(self):
+    def reverse_all_fibers(self):
         for element in self.elements:
             for section in element.sections:
                 for fiber in section.fibers:

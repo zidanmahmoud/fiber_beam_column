@@ -14,9 +14,8 @@ NO_FIBERS_Y = 15
 NO_FIBERS_Z = 15
 
 
-def main():
-    """main function"""
-
+def model_structure():
+    """ initiate the structural model """
     # STRUCTURE INITIALIZATION
     stru = fe_code.Structure()
     print("Constructed an empty stucture.")
@@ -59,17 +58,29 @@ def main():
                 counter += 1
     print(f"Added {counter - 1} fibers.")
 
+    return stru
+
+
+def add_solution_parameters(structure):
+    """ add tolerance values and boundary conditions """
     # CONVERGENCE TOLERANCE VALUES
-    stru.tolerance = 0.05
-    stru.set_section_tolerance(0.05)
+    structure.tolerance = 0.05
+    structure.set_section_tolerance(0.05)
 
     # BOUNDARY CONDITIONS
-    controled_dof = (2, "w")
-    stru.add_neumann_condition(controled_dof[0], controled_dof[1], 1.0)
-    stru.add_dirichlet_condition(1, "uvwxyz", 0)
-    stru.add_dirichlet_condition(2, "x", 0)
-    stru.add_dirichlet_condition(2, "w", 0.005)
+    structure.controled_dof = (2, "w")
+    structure.add_neumann_condition(2, "w", 1.0)
+    structure.add_dirichlet_condition(1, "uvwxyz", 0)
+    structure.add_dirichlet_condition(2, "x", 0)
+    structure.add_dirichlet_condition(2, "z", 0.005)
     print("Added the boundary conditions.")
+
+
+def main():
+    """main function"""
+
+    stru = model_structure()
+    add_solution_parameters(stru)
 
     max_nr_iterations = 100
     max_ele_iterations = 100
@@ -80,27 +91,27 @@ def main():
     load = [0]
     disp = [0]
     print("\n:: Starting solution loop ::")
-    for k in range(1, 85 + 1):
+    for k in range(1, 55 + 1):
         print(f"\nLOAD STEP : {k}")
 
         if k < 10 + 1:
             stru.new_loading(0.4, 0.005)
         elif k == 10 + 1:
-            stru.new_loading(-0.01 * 0.4, 1e-20)
+            stru.new_loading(-0.01 * 0.4, 100)
             if i == 1:
-                stru.reverse_loading()
+                stru.reverse_all_fibers()
         elif k < 30 + 1:
             stru.new_loading(-0.4, 1e-20)
         elif k == 30 + 1:
             stru.new_loading(0.01 * 0.04, 1e-20)
             if i == 1:
-                stru.reverse_loading()
+                stru.reverse_all_fibers()
         elif k < 55 + 1:
             stru.new_loading(0.4, 1e-20)
         # elif k == 55 + 1:
         #     stru.new_loading(-0.01 * 0.4, 1e-20)
         #     if i == 1:
-        #         stru.reverse_loading()
+        #         stru.reverse_all_fibers()
         # elif k < 85 + 1:
         #     stru.new_loading(-0.4, 1e-20)
 
@@ -115,19 +126,20 @@ def main():
         stru.finalize_load_step()
 
         load.append(stru.converged_load_factor)
-        disp.append(stru.converged_displacement[index_from_dof(controled_dof)])
+        disp.append(stru.converged_displacement[index_from_dof(stru.controled_dof)])
 
+    print("\n:: Finished solution loop ::")
+
+    print("\n:: Plotting Solution ::")
     _, axes = plt.subplots()
     load = 100 * np.array(load)
-    disp = 1/10000*3 * np.array(disp)
-    axes.plot(0, 0, 'yo')
+    disp = 1 / 10000 * 3 * np.array(disp)
+    axes.plot(0, 0, "yo")
     axes.plot(disp, load)
-    axes.set(
-        xlabel='curvature (rad/in)',
-        ylabel='moment (kip*in)'
-    )
+    axes.set(xlabel="curvature (rad/in)", ylabel="moment (kip*in)")
     axes.grid(True)
     plt.show()
+
 
 if __name__ == "__main__":
     main()

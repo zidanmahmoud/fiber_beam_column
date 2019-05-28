@@ -10,7 +10,7 @@ class Fiber:
         self._area = area
         self._material_class = material_class
 
-        self._first_iteration = True  # i=1 & j=1
+        self._first_iteration = True  # i=1
         self._strain_increment = None
         self.converged_strain = 0.0
         self.strain = 0.0
