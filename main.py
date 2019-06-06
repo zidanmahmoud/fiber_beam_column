@@ -74,6 +74,54 @@ def add_solution_parameters(structure):
     structure.add_dirichlet_condition(2, "z", 0.005)
     print("Added the boundary conditions.")
 
+def advance_in_load(structure, load_step):
+    """ load stepping loop """
+
+    if load_step < 10 + 1:
+        structure.new_loading(0.4, 0.005)
+
+    elif load_step == 10 + 1:
+        structure.reverse_all_fibers()
+        structure.new_loading(-0.01 * 0.4, 100)
+
+    elif load_step < 30 + 1:
+        structure.new_loading(-0.4, 1e-20)
+
+    elif load_step == 30 + 1:
+        structure.reverse_all_fibers()
+        structure.new_loading(0.01 * 0.4, 1e-20)
+
+    elif load_step < 56 + 1:
+        structure.new_loading(0.4, 1e-20)
+
+    elif load_step == 56 + 1:
+        structure.reverse_all_fibers()
+        structure.new_loading(-0.1 * 0.4, 1e-20)
+
+    elif load_step < 87 + 1:
+        structure.new_loading(-0.4, 1e-20)
+
+    elif load_step == 87 + 1:
+        structure.reverse_all_fibers()
+        structure.new_loading(0.01 * 0.4, 1e-20)
+
+    elif load_step < 104 + 1:
+        structure.new_loading(0.4, 1e-20)
+
+    elif load_step == 104 + 1:
+        structure.reverse_all_fibers()
+        structure.new_loading(-0.1 * 0.4, 1e-20)
+
+    elif load_step < 116 + 1:
+        structure.new_loading(-0.4, 1e-20)
+
+    elif load_step == 116 + 1:
+        structure.reverse_all_fibers()
+        structure.new_loading(0.1 * 0.4, 1e-20)
+
+    else:
+        structure.new_loading(0.4, 1e-20)
+
 def initiate_plot():
     """ setup the plot """
     fig = plt.figure()
@@ -113,39 +161,7 @@ def main():
     axes, line = initiate_plot()
     for k in range(1, 117 + 1):
         print(f"\nLOAD STEP : {k}")
-
-        if k < 10 + 1:
-            stru.new_loading(0.4, 0.005)
-        elif k == 10 + 1:
-            stru.new_loading(-0.01 * 0.4, 100)
-            if i == 1:
-                stru.reverse_all_fibers()
-        elif k < 30 + 1:
-            stru.new_loading(-0.4, 1e-20)
-        elif k == 30 + 1:
-            stru.new_loading(0.01 * 0.4, 1e-20)
-            if i == 1:
-                stru.reverse_all_fibers()
-        elif k < 56 + 1:
-            stru.new_loading(0.4, 1e-20)
-        elif k == 56 + 1:
-            stru.new_loading(-0.1 * 0.4, 1e-20)
-            if i == 1:
-                stru.reverse_all_fibers()
-        elif k < 87 + 1:
-            stru.new_loading(-0.4, 1e-20)
-        elif k == 87 + 1:
-            stru.new_loading(0.01 * 0.4, 1e-20)
-            if i == 1:
-                stru.reverse_all_fibers()
-        elif k < 104 + 1:
-            stru.new_loading(0.4, 1e-20)
-        elif k == 104 + 1:
-            stru.new_loading(-0.1 * 0.4, 1e-20)
-            if i == 1:
-                stru.reverse_all_fibers()
-        elif k < 117 + 1:
-            stru.new_loading(-0.4, 1e-20)
+        advance_in_load(stru, k)
 
         for i in range(1, max_nr_iterations + 1):
             stru.solve(max_ele_iterations)

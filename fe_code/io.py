@@ -21,5 +21,10 @@ def debug(variable):
 
 
 def warning(message, *args, **kwargs):
+    """ print warning in upper case """
+    print("WARNING: " + message.upper(), *args, **kwargs)
+
+
+def warning_yellow(message, *args, **kwargs):
     """ print warning in yellow upper case """
     print("\33[93m" + "WARNING: " + message.upper() + "\33[0m", *args, **kwargs)
