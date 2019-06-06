@@ -1,3 +1,4 @@
+
 import numpy as np
 
 from .node import Node
@@ -227,4 +228,4 @@ class Structure:
 
     def new_loading(self, length_incr, controled_displacement):
         self.length_increment = length_incr
-        self._dirichlet_conditions[(2, "w")] = controled_displacement
+        # self._dirichlet_conditions[(2, "w")] = controled_displacement

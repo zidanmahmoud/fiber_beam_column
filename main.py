@@ -1,5 +1,4 @@
 """main"""
-import numpy as np
 import matplotlib.pyplot as plt
 import fe_code
 from fe_code.io import warning
@@ -75,6 +74,26 @@ def add_solution_parameters(structure):
     structure.add_dirichlet_condition(2, "z", 0.005)
     print("Added the boundary conditions.")
 
+def initiate_plot():
+    """ setup the plot """
+    fig = plt.figure()
+    axes = fig.add_subplot(111)
+    axes.plot(0, 0, "yo")
+    line, = axes.plot(0, 0, "bo-", mfc="none")
+    axes.set_autoscalex_on(True)
+    axes.set_autoscaley_on(True)
+    axes.grid(True)
+    return axes, line
+
+def update_plot(axes, line, x, y):
+    """ update the plot dynamically """
+    line.set_xdata(x)
+    line.set_ydata(y)
+    axes.relim()
+    axes.autoscale_view()
+    plt.draw()
+    plt.pause(1e-20)
+
 
 def main():
     """main function"""
@@ -91,7 +110,8 @@ def main():
     load = [0]
     disp = [0]
     print("\n:: Starting solution loop ::")
-    for k in range(1, 55 + 1):
+    axes, line = initiate_plot()
+    for k in range(1, 117 + 1):
         print(f"\nLOAD STEP : {k}")
 
         if k < 10 + 1:
@@ -103,17 +123,29 @@ def main():
         elif k < 30 + 1:
             stru.new_loading(-0.4, 1e-20)
         elif k == 30 + 1:
-            stru.new_loading(0.01 * 0.04, 1e-20)
+            stru.new_loading(0.01 * 0.4, 1e-20)
             if i == 1:
                 stru.reverse_all_fibers()
-        elif k < 55 + 1:
+        elif k < 56 + 1:
             stru.new_loading(0.4, 1e-20)
-        # elif k == 55 + 1:
-        #     stru.new_loading(-0.01 * 0.4, 1e-20)
-        #     if i == 1:
-        #         stru.reverse_all_fibers()
-        # elif k < 85 + 1:
-        #     stru.new_loading(-0.4, 1e-20)
+        elif k == 56 + 1:
+            stru.new_loading(-0.1 * 0.4, 1e-20)
+            if i == 1:
+                stru.reverse_all_fibers()
+        elif k < 87 + 1:
+            stru.new_loading(-0.4, 1e-20)
+        elif k == 87 + 1:
+            stru.new_loading(0.01 * 0.4, 1e-20)
+            if i == 1:
+                stru.reverse_all_fibers()
+        elif k < 104 + 1:
+            stru.new_loading(0.4, 1e-20)
+        elif k == 104 + 1:
+            stru.new_loading(-0.1 * 0.4, 1e-20)
+            if i == 1:
+                stru.reverse_all_fibers()
+        elif k < 117 + 1:
+            stru.new_loading(-0.4, 1e-20)
 
         for i in range(1, max_nr_iterations + 1):
             stru.solve(max_ele_iterations)
@@ -125,19 +157,12 @@ def main():
 
         stru.finalize_load_step()
 
-        load.append(stru.converged_load_factor)
-        disp.append(stru.converged_displacement[index_from_dof(stru.controled_dof)])
+        load.append(100 * stru.converged_load_factor)
+        disp.append(1 / 10000 * 3 * stru.converged_displacement[index_from_dof(stru.controled_dof)])
+        update_plot(axes, line, disp, load)
 
     print("\n:: Finished solution loop ::")
 
-    print("\n:: Plotting Solution ::")
-    _, axes = plt.subplots()
-    load = 100 * np.array(load)
-    disp = 1 / 10000 * 3 * np.array(disp)
-    axes.plot(0, 0, "yo")
-    axes.plot(disp, load)
-    axes.set(xlabel="curvature (rad/in)", ylabel="moment (kip*in)")
-    axes.grid(True)
     plt.show()
 
 
