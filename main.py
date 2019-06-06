@@ -59,7 +59,6 @@ def model_structure():
 
     return stru
 
-
 def add_solution_parameters(structure):
     """ add tolerance values and boundary conditions """
     # CONVERGENCE TOLERANCE VALUES
@@ -112,10 +111,10 @@ def advance_in_load(structure, load_step):
         structure.reverse_all_fibers()
         structure.new_loading(-0.1 * 0.4, 1e-20)
 
-    elif load_step < 116 + 1:
+    elif load_step < 118 + 1:
         structure.new_loading(-0.4, 1e-20)
 
-    elif load_step == 116 + 1:
+    elif load_step == 118 + 1:
         structure.reverse_all_fibers()
         structure.new_loading(0.1 * 0.4, 1e-20)
 
@@ -159,7 +158,7 @@ def main():
     disp = [0]
     print("\n:: Starting solution loop ::")
     axes, line = initiate_plot()
-    for k in range(1, 117 + 1):
+    for k in range(1, 123 + 1):
         print(f"\nLOAD STEP : {k}")
         advance_in_load(stru, k)
 
