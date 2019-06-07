@@ -66,60 +66,60 @@ def add_solution_parameters(structure):
     structure.set_section_tolerance(0.05)
 
     # BOUNDARY CONDITIONS
-    structure.controled_dof = (2, "w")
+    structure.set_controled_dof(2, "w")
     structure.add_neumann_condition(2, "w", 1.0)
     structure.add_dirichlet_condition(1, "uvwxyz", 0)
     structure.add_dirichlet_condition(2, "x", 0)
-    structure.add_dirichlet_condition(2, "z", 0.005)
+    structure.add_dirichlet_condition(2, "z", 0.005) #useless
     print("Added the boundary conditions.")
 
 def advance_in_load(structure, load_step):
     """ load stepping loop """
 
     if load_step < 10 + 1:
-        structure.new_loading(0.4, 0.005)
+        structure.controled_dof_increment = 0.4
 
     elif load_step == 10 + 1:
         structure.reverse_all_fibers()
-        structure.new_loading(-0.01 * 0.4, 100)
+        structure.controled_dof_increment = -0.01 * 0.4
 
     elif load_step < 30 + 1:
-        structure.new_loading(-0.4, 1e-20)
+        structure.controled_dof_increment = -0.4
 
     elif load_step == 30 + 1:
         structure.reverse_all_fibers()
-        structure.new_loading(0.01 * 0.4, 1e-20)
+        structure.controled_dof_increment = 0.01 * 0.4
 
-    elif load_step < 56 + 1:
-        structure.new_loading(0.4, 1e-20)
+    elif load_step < 55 + 1:
+        structure.controled_dof_increment = 0.4
 
-    elif load_step == 56 + 1:
+    elif load_step == 55 + 1:
         structure.reverse_all_fibers()
-        structure.new_loading(-0.1 * 0.4, 1e-20)
+        structure.controled_dof_increment = -0.01 * 0.4
 
-    elif load_step < 87 + 1:
-        structure.new_loading(-0.4, 1e-20)
+    elif load_step < 85 + 1:
+        structure.controled_dof_increment = -0.4
 
-    elif load_step == 87 + 1:
+    elif load_step == 85 + 1:
         structure.reverse_all_fibers()
-        structure.new_loading(0.01 * 0.4, 1e-20)
+        structure.controled_dof_increment = 0.01 * 0.4
 
-    elif load_step < 104 + 1:
-        structure.new_loading(0.4, 1e-20)
+    elif load_step < 101 + 1:
+        structure.controled_dof_increment = 0.4
 
-    elif load_step == 104 + 1:
+    elif load_step == 101 + 1:
         structure.reverse_all_fibers()
-        structure.new_loading(-0.1 * 0.4, 1e-20)
+        structure.controled_dof_increment = -0.01 * 0.4
 
-    elif load_step < 118 + 1:
-        structure.new_loading(-0.4, 1e-20)
+    elif load_step < 112 + 1:
+        structure.controled_dof_increment = -0.4
 
-    elif load_step == 118 + 1:
+    elif load_step == 112 + 1:
         structure.reverse_all_fibers()
-        structure.new_loading(0.1 * 0.4, 1e-20)
+        structure.controled_dof_increment = 0.01 * 0.4
 
     else:
-        structure.new_loading(0.4, 1e-20)
+        structure.controled_dof_increment = 0.4
 
 def initiate_plot():
     """ setup the plot """
@@ -158,7 +158,7 @@ def main():
     disp = [0]
     print("\n:: Starting solution loop ::")
     axes, line = initiate_plot()
-    for k in range(1, 123 + 1):
+    for k in range(1, 117 + 1):
         print(f"\nLOAD STEP : {k}")
         advance_in_load(stru, k)
 

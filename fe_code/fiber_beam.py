@@ -8,10 +8,11 @@ import numpy as np
 
 from .element import Element
 from .section import Section
+from .dof import Dof
 from .gauss_lobatto import GaussLobatto
 
 
-class FiberBeam(Element):
+class FiberBeam:
     def __init__(self, node1, node2):
         self._nodes = [node1, node2]
         self._sections = dict()
@@ -26,6 +27,9 @@ class FiberBeam(Element):
         self.resisting_forces = np.zeros(5)
         self.displacement_residual = None
 
+        dof_types = "uvwxyz"
+        self.dofs = [Dof(node.id, dof_type) for node in self._nodes for dof_type in dof_types]
+
     @property
     def nodes(self):
         return self._nodes
@@ -33,11 +37,6 @@ class FiberBeam(Element):
     @property
     def sections(self):
         return self._sections.values()
-
-    @property
-    def dofs(self):
-        dof_types = "uvwxyz"
-        return [(node.id, dof) for node in self.nodes for dof in dof_types]
 
     def add_section(self, section_id):
         if section_id in self._sections:

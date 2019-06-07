@@ -1,6 +1,4 @@
 """This module only contains the Node class.
-
-Author: Thomas Oberbichler
 """
 
 import numpy as np
@@ -116,54 +114,3 @@ class Node(object):
             A numpy array containing the displacements u, v and w.
         """
         return self.get_reference_location() - self.get_actual_location()
-
-    def get_dof_state(self, dof_type):
-        """Get the current value of the given dof type.
-
-        Parameters
-        ----------
-        dof_type : string
-            Type of the dof.
-
-        Returns
-        -------
-        value : float
-            The current value of the dof type
-
-        Raises
-        ------
-        AttributeError
-            If `dof_type` does not exist.
-        """
-        if dof_type == "u":
-            return self.u
-        if dof_type == "v":
-            return self.v
-        if dof_type == "w":
-            return self.w
-
-        raise AttributeError(f"Node has no dof of type '{dof_type}'")
-
-    def set_dof_state(self, dof_type, value):
-        """Update the node according to the value of the given dof type.
-
-        Parameters
-        ----------
-        dof_type : string
-            Type of the Dof.
-        value : float
-            The value of the given dof.
-
-        Raises
-        ------
-        AttributeError
-            If `dof_type` does not exist.
-        """
-        if dof_type == "u":
-            self.u = value
-        elif dof_type == "v":
-            self.v = value
-        elif dof_type == "w":
-            self.w = value
-        else:
-            raise AttributeError(f"Node has no dof of type '{dof_type}'")
