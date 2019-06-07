@@ -1,4 +1,6 @@
-
+"""
+Module contains the structure class
+"""
 import numpy as np
 
 from .node import Node
@@ -10,15 +12,27 @@ DOF_INDEX_MAP = {"u": 0, "v": 1, "w": 2, "x": 3, "y": 4, "z": 5}
 
 
 def index_from_dof(dof):
+    """get the index from dof"""
     node_id, dof_type = dof
     return 6 * (node_id - 1) + DOF_INDEX_MAP[dof_type]
 
 
 def dof_from_index(index):
-    raise NotImplementedError
+    """get the dof from index"""
+    node_id = 1 + index // 6
+    for key, value in DOF_INDEX_MAP.items():
+        if value == index % 6:
+            dof_type = key
+    return node_id, dof_type
 
 
 class Structure:
+    """
+    Structure class
+
+    Attributes
+    ----------
+    """
     def __init__(self):
         self._nodes = dict()
         self._elements = dict()
@@ -41,6 +55,7 @@ class Structure:
 
     @property
     def tolerance(self):
+        """ tolerance to check convergence """
         return self._tolerance
 
     @tolerance.setter
@@ -48,45 +63,56 @@ class Structure:
         self._tolerance = value
 
     def set_section_tolerance(self, value):
+        """ set convergence tolerance for sections """
         for element in self.elements:
             for section in element.sections:
                 section.tolerance = value
 
     @property
     def nodes(self):
+        """ nodes """
         return self._nodes.values()
 
     def get_node(self, node_id):
+        """ get node with id """
         return self._nodes[node_id]
 
     @property
     def elements(self):
+        """ elements """
         return self._elements.values()
 
     def get_element(self, element_id):
+        """ get element with id """
         return self._elements[element_id]
 
     @property
     def no_dofs(self):
+        """ number of dofs """
         return len(self._nodes) * 6
 
     def add_node(self, node_id, x_pos, y_pos, z_pos):
+        """ add a node """
         self._nodes[node_id] = Node(node_id, x_pos, y_pos, z_pos)
 
     def add_fiber_beam_element(self, element_id, node1_id, node2_id):
+        """ add an element """
         self._elements[element_id] = FiberBeam(self.get_node(node1_id), self.get_node(node2_id))
 
     def add_dirichlet_condition(self, node_id, dof_types, value):
+        """ add a dirichlet boundary condition """
         for dof_type in dof_types:
             dof = (node_id, dof_type)
             self._dirichlet_conditions[dof] = value
 
     def add_neumann_condition(self, node_id, dof_types, value):
+        """ add a Neumann boundary condition """
         for dof_type in dof_types:
             dof = (node_id, dof_type)
             self._newmann_conditions[dof] = value
 
     def initialize(self):
+        """ initialize all arrays and stuff """
         self._stiffness = np.zeros((self.no_dofs, self.no_dofs))
         self._displacement_increment = np.zeros(self.no_dofs)
         self._unbalanced_forces = np.zeros(self.no_dofs)
@@ -98,12 +124,11 @@ class Structure:
             element.initialize()
         self._calculate_stiffness_matrix()
 
-    # FIXME temp fix
     @property
     def force_vector(self):
-        controlled_dof = (2, "w")
+        """ force vector with 1 in controled dof position """
         force = np.zeros(self.no_dofs)
-        force[index_from_dof(controlled_dof)] = 1
+        force[index_from_dof(self.controled_dof)] = 1
         return force
 
     def _calculate_stiffness_matrix(self):
@@ -151,7 +176,7 @@ class Structure:
         rhs[:dofs] = self._unbalanced_forces
         rhs[-1] = self.force_vector @ self._displacement_increment - self.length_increment
 
-        change_in_increments = np.linalg.solve(lhs, rhs)
+        change_in_increments = np.linalg.inv(lhs) @ rhs
         self._displacement_increment += change_in_increments[:dofs]
         self._load_factor_increment += change_in_increments[-1]
         self._displacement = self.converged_displacement + self._displacement_increment
@@ -228,4 +253,4 @@ class Structure:
 
     def new_loading(self, length_incr, controled_displacement):
         self.length_increment = length_incr
-        # self._dirichlet_conditions[(2, "w")] = controled_displacement
+        self._dirichlet_conditions[self.controled_dof] = controled_displacement
