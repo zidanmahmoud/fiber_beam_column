@@ -52,6 +52,7 @@ class Structure:
         used to check convergence
         default is 1e-7
     """
+
     def __init__(self):
         self._nodes = dict()
         self._elements = dict()
