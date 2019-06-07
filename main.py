@@ -47,7 +47,12 @@ def model_structure():
                 # z = height/no_fibers_z * (j + 0.5)
                 if i in (1, 13) and j in (1, 13):
                     section.add_fiber(
-                        counter, y, z, i, j, fiber_area,
+                        counter,
+                        y,
+                        z,
+                        i,
+                        j,
+                        fiber_area,
                         fe_code.MenegottoPintoModel(29000, 0.0042 * 29000, 60, 20, 18.5, 0.0002),
                     )
                 else:
@@ -58,6 +63,7 @@ def model_structure():
     print(f"Added {counter - 1} fibers.")
 
     return stru
+
 
 def add_solution_parameters(structure):
     """ add tolerance values and boundary conditions """
@@ -70,8 +76,9 @@ def add_solution_parameters(structure):
     structure.add_neumann_condition(2, "w", 1.0)
     structure.add_dirichlet_condition(1, "uvwxyz", 0)
     structure.add_dirichlet_condition(2, "x", 0)
-    structure.add_dirichlet_condition(2, "z", 0.005) #useless
+    structure.add_dirichlet_condition(2, "z", 0.005)  # useless
     print("Added the boundary conditions.")
+
 
 def advance_in_load(structure, load_step):
     """ load stepping loop """
@@ -121,6 +128,7 @@ def advance_in_load(structure, load_step):
     else:
         structure.controled_dof_increment = 0.4
 
+
 def initiate_plot():
     """ setup the plot """
     fig = plt.figure()
@@ -131,6 +139,7 @@ def initiate_plot():
     axes.set_autoscaley_on(True)
     axes.grid(True)
     return axes, line
+
 
 def update_plot(axes, line, x, y):
     """ update the plot dynamically """
