@@ -3,7 +3,7 @@ Module contains the class dof
 """
 
 
-class Dof:
+class DoF:
     """
     Degree of freedom
 

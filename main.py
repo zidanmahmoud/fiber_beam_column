@@ -4,6 +4,8 @@ import fe_code
 from fe_code.io import warning
 from fe_code.structure import index_from_dof
 
+PLOT_FLAG = False
+
 # == MODELING PARAMETERS
 LENGTH = 100.0
 WIDTH = 5.0
@@ -47,12 +49,7 @@ def model_structure():
                 # z = height/no_fibers_z * (j + 0.5)
                 if i in (1, 13) and j in (1, 13):
                     section.add_fiber(
-                        counter,
-                        y,
-                        z,
-                        i,
-                        j,
-                        fiber_area,
+                        counter, y, z, i, j, fiber_area,
                         fe_code.MenegottoPintoModel(29000, 0.0042 * 29000, 60, 20, 18.5, 0.0002),
                     )
                 else:
@@ -68,7 +65,7 @@ def model_structure():
 def add_solution_parameters(structure):
     """ add tolerance values and boundary conditions """
     # CONVERGENCE TOLERANCE VALUES
-    structure.tolerance = 0.05
+    structure.tolerance = 1e-10
     structure.set_section_tolerance(0.05)
 
     # BOUNDARY CONDITIONS
@@ -133,6 +130,7 @@ def initiate_plot():
     """ setup the plot """
     fig = plt.figure()
     axes = fig.add_subplot(111)
+    axes.set(title="Moment-Curvature Plot", xlabel="Curvature [rad/in]", ylabel="Moment [kip*in]")
     axes.plot(0, 0, "yo")
     line, = axes.plot(0, 0, "bo-", mfc="none")
     axes.set_autoscalex_on(True)
@@ -166,24 +164,31 @@ def main():
     load = [0]
     disp = [0]
     print("\n:: Starting solution loop ::")
-    axes, line = initiate_plot()
+
+    if PLOT_FLAG:
+        axes, line = initiate_plot()
+
     for k in range(1, 117 + 1):
         print(f"\nLOAD STEP : {k}")
         advance_in_load(stru, k)
 
         for i in range(1, max_nr_iterations + 1):
             stru.solve(max_ele_iterations)
-            if stru.check_nr_convergence():
-                print(f"NR converged with {i} iteration(s).")
+            convergence, residual = stru.check_nr_convergence()
+            if convergence:
+                print(f"NR converged with {i} iteration(s). Residual = {residual}")
                 break
             if i == max_nr_iterations:
                 warning(f"Newton-Raphson did not converge {max_nr_iterations} iterations")
 
         stru.finalize_load_step()
 
-        load.append(100 * stru.converged_load_factor)
-        disp.append(1 / 10000 * 3 * stru.converged_displacement[index_from_dof(stru.controled_dof)])
-        update_plot(axes, line, disp, load)
+        if PLOT_FLAG:
+            load.append(100 * stru.converged_load_factor)
+            disp.append(
+                1 / 10000 * 3 * stru.converged_displacement[index_from_dof(stru.controled_dof)]
+            )
+            update_plot(axes, line, disp, load)
 
     print("\n:: Finished solution loop ::")
 
