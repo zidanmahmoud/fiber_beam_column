@@ -252,6 +252,9 @@ class Structure:
         self._load_factor_increment = 0.0
         self.converged_displacement = self._displacement
         self.converged_load_factor = self._load_factor
+        for node in self.nodes:
+            indices = [index_from_dof(DoF(node.id, dof_type)) for dof_type in "uvw"]
+            node.u, node.v, node.w = self.converged_displacement[indices]
         for element in self.elements:
             element.finalize_load_step()
 

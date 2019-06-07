@@ -1,10 +1,11 @@
 """main"""
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 import fe_code
 from fe_code.io import warning
 from fe_code.structure import index_from_dof
 
-PLOT_FLAG = False
+PLOT_FLAG = True
 
 # == MODELING PARAMETERS
 LENGTH = 100.0
@@ -139,13 +140,57 @@ def initiate_plot():
     return axes, line
 
 
+def initiate_plot_3d(structure):
+    fig = plt.figure()
+    axes = fig.add_subplot(111, projection=Axes3D.name)
+    x = list()
+    y = list()
+    z = list()
+    for node in structure.nodes:
+        loc = node.get_reference_location()
+        x.append(loc[0])
+        y.append(loc[1])
+        z.append(loc[2])
+    line, = axes.plot(x, y, z, "bo-")
+    axes.set(
+        xlabel="< x >",
+        ylabel="< y >",
+        zlabel="< z >")
+    axes.view_init(elev=0, azim=-90)
+    axes.set_xlim3d(min(x) - 1, max(x) + 1)
+    axes.set_ylim3d(min(y) - 1, max(y) + 1)
+    axes.set_zlim3d(-4, 4)
+    return axes, line
+
+
 def update_plot(axes, line, x, y):
     """ update the plot dynamically """
     line.set_xdata(x)
     line.set_ydata(y)
     axes.relim()
     axes.autoscale_view()
-    plt.draw()
+    axes.get_figure().canvas.draw()
+    plt.pause(1e-20)
+
+
+def update_plot_3d(axes, line, structure):
+    """ update the plot dynamically """
+    x = list()
+    y = list()
+    z = list()
+    for node in structure.nodes:
+        loc = node.get_actual_location()
+        x.append(loc[0])
+        y.append(loc[1])
+        z.append(loc[2])
+    line.set_xdata(x)
+    line.set_ydata(y)
+    line.set_3d_properties(z)
+    axes.set_xlim3d(min(x) - 1, max(x) + 1)
+    axes.set_ylim3d(min(y) - 1, max(y) + 1)
+    axes.set_zlim3d(-4, 4)
+    axes.set_top_view()
+    axes.get_figure().canvas.draw()
     plt.pause(1e-20)
 
 
@@ -167,6 +212,7 @@ def main():
 
     if PLOT_FLAG:
         axes, line = initiate_plot()
+        axes3d, line3d = initiate_plot_3d(stru)
 
     for k in range(1, 117 + 1):
         print(f"\nLOAD STEP : {k}")
@@ -189,6 +235,7 @@ def main():
                 1 / 10000 * 3 * stru.converged_displacement[index_from_dof(stru.controled_dof)]
             )
             update_plot(axes, line, disp, load)
+            update_plot_3d(axes3d, line3d, stru)
 
     print("\n:: Finished solution loop ::")
 
