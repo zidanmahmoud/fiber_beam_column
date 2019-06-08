@@ -1,4 +1,7 @@
-"""main"""
+"""
+Example
+"""
+
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import fe_code
@@ -141,6 +144,7 @@ def initiate_plot():
 
 
 def initiate_plot_3d(structure):
+    """ setup the plot """
     fig = plt.figure()
     axes = fig.add_subplot(111, projection=Axes3D.name)
     x = list()
@@ -152,10 +156,7 @@ def initiate_plot_3d(structure):
         y.append(loc[1])
         z.append(loc[2])
     line, = axes.plot(x, y, z, "bo-")
-    axes.set(
-        xlabel="< x >",
-        ylabel="< y >",
-        zlabel="< z >")
+    axes.set(xlabel="< x >", ylabel="< y >", zlabel="< z >")
     axes.view_init(elev=0, azim=-90)
     axes.set_xlim3d(min(x) - 1, max(x) + 1)
     axes.set_ylim3d(min(y) - 1, max(y) + 1)
@@ -212,7 +213,7 @@ def main():
 
     if PLOT_FLAG:
         axes, line = initiate_plot()
-        axes3d, line3d = initiate_plot_3d(stru)
+        # axes3d, line3d = initiate_plot_3d(stru)
 
     for k in range(1, 117 + 1):
         print(f"\nLOAD STEP : {k}")
@@ -235,7 +236,7 @@ def main():
                 1 / 10000 * 3 * stru.converged_displacement[index_from_dof(stru.controled_dof)]
             )
             update_plot(axes, line, disp, load)
-            update_plot_3d(axes3d, line3d, stru)
+            # update_plot_3d(axes3d, line3d, stru)
 
     print("\n:: Finished solution loop ::")
 

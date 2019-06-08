@@ -38,6 +38,7 @@ class Fiber:
 
     def __init__(self, y, z, ny, nz, area, material_class):
         self.direction = np.array([-y, z, 1.0])
+        self.direction_matrix = np.outer(self.direction, self.direction)
         # TODO: get rid of ny, nz
         self._ny = ny
         self._nz = nz

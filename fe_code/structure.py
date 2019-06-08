@@ -65,8 +65,9 @@ class Structure:
         self._load_factor_increment = 0.0
         self._load_factor = 0.0
         self.converged_load_factor = 0.0
-        self.controled_dof_increment = 0.4
+        self.controled_dof_increment = 0.0
 
+        # initialized as None because the number of dofs is not yet determined
         self._stiffness = None
         self._unbalanced_forces = None
         self._displacement_increment = None

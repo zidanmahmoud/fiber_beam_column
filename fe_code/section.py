@@ -73,7 +73,7 @@ class Section:
         self.stiffness_matrix.fill(0.0)
         for fiber in self.fibers:
             EA = fiber.tangent_stiffness * fiber.area
-            self.stiffness_matrix += EA * np.outer(fiber.direction, fiber.direction)
+            self.stiffness_matrix += EA * fiber.direction_matrix
 
     def calculate_force_increment_from_element(self, ele_chng_force_increment):
         """ step 8 """
