@@ -136,6 +136,11 @@ class Structure:
         """ sets the controled dof """
         self.controled_dof = DoF(node_id, dof_type)
 
+    @property
+    def converged_controled_dof(self):
+        """ converged_controled_dof """
+        return self.converged_displacement[index_from_dof(self.controled_dof)]
+
     def initialize(self):
         """ initialize all arrays and stuff """
         self._stiffness = np.zeros((self.no_dofs, self.no_dofs))

@@ -4,9 +4,9 @@ Example
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-import fe_code
-from fe_code.io import warning
-from fe_code.structure import index_from_dof
+
+from fe_code import io, Structure, MenegottoPintoModel, KentParkModel
+# from fe_code import io, Structure, MenegottoPinto, KentPark
 
 PLOT_FLAG = True
 
@@ -22,7 +22,7 @@ NO_FIBERS_Z = 15
 def model_structure():
     """ initiate the structural model """
     # STRUCTURE INITIALIZATION
-    stru = fe_code.Structure()
+    stru = Structure()
     print("Constructed an empty stucture.")
 
     # NODES
@@ -54,11 +54,11 @@ def model_structure():
                 if i in (1, 13) and j in (1, 13):
                     section.add_fiber(
                         counter, y, z, i, j, fiber_area,
-                        fe_code.MenegottoPintoModel(29000, 0.0042 * 29000, 60, 20, 18.5, 0.0002),
+                        MenegottoPintoModel(29000, 0.0042 * 29000, 60, 20, 18.5, 0.0002),
                     )
                 else:
                     section.add_fiber(
-                        counter, y, z, i, j, fiber_area, fe_code.KentParkModel(6.95, 1, -0.07, 770)
+                        counter, y, z, i, j, fiber_area, KentParkModel(6.95, 1, -0.07, 770)
                     )
                 counter += 1
     print(f"Added {counter - 1} fibers.")
@@ -226,15 +226,13 @@ def main():
                 print(f"NR converged with {i} iteration(s). Residual = {residual}")
                 break
             if i == max_nr_iterations:
-                warning(f"Newton-Raphson did not converge {max_nr_iterations} iterations")
+                io.warning(f"Newton-Raphson did not converge {max_nr_iterations} iterations")
 
         stru.finalize_load_step()
 
         if PLOT_FLAG:
             load.append(100 * stru.converged_load_factor)
-            disp.append(
-                1 / 10000 * 3 * stru.converged_displacement[index_from_dof(stru.controled_dof)]
-            )
+            disp.append(1 / 10000 * 3 * stru.converged_controled_dof)
             update_plot(axes, line, disp, load)
             # update_plot_3d(axes3d, line3d, stru)
 
@@ -245,4 +243,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    #test

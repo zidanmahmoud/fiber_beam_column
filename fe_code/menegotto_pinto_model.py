@@ -283,10 +283,6 @@ class MenegottoPintoModel(object):
     other:
     """
 
-    def get_material_id(self):
-
-        return self.id
-
     def get_material_PEEQ(self):
 
         return self.cosi
