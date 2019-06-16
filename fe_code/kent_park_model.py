@@ -76,12 +76,12 @@ class KentParkModel:
         self.change_in_material_strain_incr = 0.0
         self.last_loadstep_material_strain_incr = 0.0
         self.material_strain_last_loadstep = 0.0
-        self.material_stress_last_loadstep = 0.0
+        self.stress_last_loadstep = 0.0
         self.material_strain_incr = 0.0
         self.material_strain = 0.0
         self.material_PEEQ = 0.0
-        self.material_stress = 0.0
-        self.material_tangent_modulus = (
+        self.stress = 0.0
+        self.tangent_modulus = (
             -2 * self.compressive_strength * self.confinement_factor / self.ep0
         )
         self.direction = 0.0
@@ -163,7 +163,7 @@ class KentParkModel:
 
         if load_step_convergence:
             self.material_strain_last_loadstep = self.material_strain
-            self.material_stress_last_loadstep = self.material_stress
+            self.stress_last_loadstep = self.stress
 
     """
     material_stress :
@@ -177,15 +177,15 @@ class KentParkModel:
 
     def get_material_stress(self):
 
-        return self.material_stress
+        return self.stress
 
     def initialize_material_stress(self):
 
-        self.material_stress = 0.0
+        self.stress = 0.0
 
     def update_material_stress(self):
 
-        self.material_stress = self.calculate_material_stress()
+        self.stress = self.calculate_material_stress()
 
     """
     material_tangent_modulus :
@@ -196,17 +196,17 @@ class KentParkModel:
 
     def get_material_tangent_modulus(self):
 
-        return self.material_tangent_modulus
+        return self.tangent_modulus
 
     def initialize_material_tangent_modulus(self):
 
-        self.material_tangent_modulus = (
+        self.tangent_modulus = (
             -2 * self.compressive_strength * self.confinement_factor / self.ep0
         )
 
     def update_material_tangent_modulus(self):
 
-        self.material_tangent_modulus = self.calculate_material_tangent_modulus()
+        self.tangent_modulus = self.calculate_material_tangent_modulus()
 
     """
     epp :
@@ -247,7 +247,7 @@ class KentParkModel:
 
         if self.material_strain < 0:
             self.epr = self.material_strain_last_loadstep
-            self.sgr = self.material_stress_last_loadstep
+            self.sgr = self.stress_last_loadstep
             self.update_epp()
         print_ = False
         if print_:

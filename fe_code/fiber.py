@@ -58,10 +58,7 @@ class Fiber:
         """
         material stiffness
         """
-        if isinstance(self._material, MenegottoPinto):
-            return self._material.tangent_modulus
-        else:
-            return self._material.get_material_tangent_modulus()
+        return self._material.tangent_modulus
 
     def initialize(self):
         """
@@ -96,10 +93,7 @@ class Fiber:
 
     def calculate_stress(self):
         """ step 11 """
-        if isinstance(self._material, MenegottoPinto):
-            self.stress = self._material.stress
-        else:
-            self.stress = self._material.get_material_stress()
+        self.stress = self._material.stress
 
     def finalize_load_step(self):
         """
@@ -110,9 +104,9 @@ class Fiber:
         else:
             self._material.save_to_last_loadstep_material_strain_incr(True)
             self._material.save_to_material_strain_last_loadstep(True)
-            self.converged_strain = self.strain
             self._material.initialize_material_strain_incr()
-            self._strain_increment = 0.0
+        self.converged_strain = self.strain
+        self._strain_increment = 0.0
 
     def reverse_loading(self):
         """
