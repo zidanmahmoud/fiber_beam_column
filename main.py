@@ -5,7 +5,7 @@ Example
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-from fe_code import io, Structure, MenegottoPintoModel, KentParkModel
+from fe_code import io, Structure, MenegottoPinto, KentParkModel
 # from fe_code import io, Structure, MenegottoPinto, KentPark
 
 PLOT_FLAG = True
@@ -54,7 +54,7 @@ def model_structure():
                 if i in (1, 13) and j in (1, 13):
                     section.add_fiber(
                         counter, y, z, i, j, fiber_area,
-                        MenegottoPintoModel(29000, 0.0042 * 29000, 60, 20, 18.5, 0.0002),
+                        MenegottoPinto(29000, 0.0042 * 29000, 60, 20, 18.5, 0.0002),
                     )
                 else:
                     section.add_fiber(
