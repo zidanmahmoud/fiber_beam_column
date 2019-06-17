@@ -5,9 +5,10 @@ Example
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-from fe_code import io, Structure, MenegottoPinto, KentParkModel
+from fe_code import io, Structure, MenegottoPinto, KentPark
 
 PLOT_FLAG = True
+SAVE_PLOT = True
 
 # == MODELING PARAMETERS
 LENGTH = 100.0
@@ -57,7 +58,7 @@ def model_structure():
                     )
                 else:
                     section.add_fiber(
-                        counter, y, z, i, j, fiber_area, KentParkModel(6.95, 1, -0.07, 770)
+                        counter, y, z, i, j, fiber_area, KentPark(6.95, 1, -0.07, 770)
                     )
                 counter += 1
     print(f"Added {counter - 1} fibers.")
@@ -139,7 +140,7 @@ def initiate_plot():
     axes.set_autoscalex_on(True)
     axes.set_autoscaley_on(True)
     axes.grid(True)
-    return axes, line
+    return fig, axes, line
 
 
 def initiate_plot_3d(structure):
@@ -160,7 +161,7 @@ def initiate_plot_3d(structure):
     axes.set_xlim3d(min(x) - 1, max(x) + 1)
     axes.set_ylim3d(min(y) - 1, max(y) + 1)
     axes.set_zlim3d(-4, 4)
-    return axes, line
+    return fig, axes, line
 
 
 def update_plot(axes, line, x, y):
@@ -211,8 +212,8 @@ def main():
     print("\n:: Starting solution loop ::")
 
     if PLOT_FLAG:
-        axes, line = initiate_plot()
-        # axes3d, line3d = initiate_plot_3d(stru)
+        fig, axes, line = initiate_plot()
+        # fig3d, axes3d, line3d = initiate_plot_3d(stru)
 
     for k in range(1, 117 + 1):
         print(f"\nLOAD STEP : {k}")
@@ -237,7 +238,10 @@ def main():
 
     print("\n:: Finished solution loop ::")
 
-    plt.show()
+    if PLOT_FLAG and not SAVE_PLOT:
+        fig.show()
+    if PLOT_FLAG and SAVE_PLOT:
+        fig.savefig("moment_curvature_reference.png")
 
 
 if __name__ == "__main__":

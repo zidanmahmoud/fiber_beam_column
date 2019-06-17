@@ -23,9 +23,9 @@ class KentPark(Material):
         self._strain_ultimate = epu
         self._Z = Z
 
-        self._strain_r = 0
-        self.stress_r = 0
-        self._strain_p = 0
+        self._strain_r = 0.0
+        self._stress_r = 0.0
+        self._strain_p = 0.0
 
         self._chng_strain_increment = 0.0
         self._converged_strain_increment = 0.0
@@ -44,16 +44,92 @@ class KentPark(Material):
         self._strain_increment += self._chng_strain_increment
         self._strain = self._converged_strain + self._strain_increment
 
-    def reverse(self):
-        pass
+    def reverse(self, nz):
+        if self._strain < 0:
+            self._strain_r = self._converged_strain
+            self._stress_r = self._converged_stress
+
+            critical_point = self._strain_r / self._strain_0
+            ep0 = self._strain_0
+            if critical_point >= 2:
+                self._strain_p = ep0 * (0.707 * (critical_point - 2) + 0.834)
+            elif critical_point > 0:
+                self._strain_p = ep0 * (0.145 * critical_point**2 + 0.13 * critical_point)
 
     def calculate_stress_and_tangent_modulus(self):
-        pass
+        eps = self._strain
+        ep0 = self._strain_0
+        epp = self._strain_p
+        epr = self._strain_r
+        epu = self._strain_ultimate
+        sgr = self._stress_r
+        K = self._confinement_factor
+        Z = self._Z
+        fc = self._compressive_strength
+
+        if self._strain_increment < 0:
+            if eps >= epp:
+                sg = 0.0
+                Et = 0.0
+            elif epr <= eps < epp:
+                sg = sgr / (epr - epp) * (eps - epr) + sgr
+                Et = sgr / (epr - epp)
+            elif eps < epr:
+                if eps > 0:
+                    sg = 0.0
+                    Et = 0.0
+                elif eps > ep0:
+                    sg = K * fc * (-2 * (eps / ep0) + (eps / ep0) ** 2)
+                    Et = K * fc * (-(2 / ep0) + (eps / ep0) * 2 / ep0)
+                elif eps > epu:
+                    # sg = max(K * fc * (-1 - Z * (eps - ep0)), -0.2 * K * fc)
+                    sg = K * fc * (-1 - Z * (eps - ep0))
+                    if sg < -0.2 * K * fc:
+                        Et = -K * fc * Z
+                    else:
+                        sg = -0.2 * K * fc
+                        Et = 0.0
+                else:
+                    sg = 0.0
+                    Et = 0.0
+        else:
+            if eps <= epr:
+                if eps > 0:
+                    sg = 0.0
+                    Et = 0.0
+                elif eps > ep0:
+                    sg = K * fc * (-2 * (eps / ep0) + (eps / ep0) ** 2)
+                    Et = K * fc * (-(2 / ep0) + (eps / ep0) * 2 / ep0)
+                elif eps > epu:
+                    # sg = max(K * fc * (-1 - Z * (eps - ep0)), -0.2 * K * fc)
+                    sg = K * fc * (-1 - Z * (eps - ep0))
+                    if sg < -0.2 * K * fc:
+                        Et = -K * fc * Z
+                    else:
+                        sg = -0.2 * K * fc
+                        Et = 0.0
+                else:
+                    sg = 0.0
+                    Et = 0.0
+
+            elif eps < epp:
+                sg = sgr / (epr - epp) * (eps - epr) + sgr
+                Et = sgr / (epr - epp)
+            else:
+                sg = 0.0
+                Et = 0.0
+
+        self.stress = sg
+        self.tangent_modulus = Et
 
     def finalize_load_step(self):
         self.save_to_last_loadstep_material_strain_incr(True)
         self.save_to_material_strain_last_loadstep(True)
         self.initialize_material_strain_incr()
+
+    def update_change_in_material_strain_incr(self, change_in_fiber_strain_incr):
+
+        self._chng_strain_increment = change_in_fiber_strain_incr
 
     def save_to_last_loadstep_material_strain_incr(self, load_step_convergence):
 
@@ -198,12 +274,12 @@ class KentPark(Material):
 
         if self._strain < 0:
             self._strain_r = self._converged_strain
-            self.stress_r = self._converged_stress
+            self._stress_r = self._converged_stress
             self.update_strain_p()
         print_ = False
         if print_:
             print("self._strain_r = ", self._strain_r)
-            print("sgr = ", self.stress_r)
+            print("sgr = ", self._stress_r)
             print("self._strain_p = ", self._strain_p)
             print("last_loadstep_material_strain_incr = ", self._converged_strain_increment)
             print("material_strain_incr = ", self._strain_increment)
@@ -248,10 +324,10 @@ class KentPark(Material):
         ep0 = self._strain_0
         Z = self._Z
         self._strain_r = self._strain_r
-        sgr = self.stress_r
+        sgr = self._stress_r
         self._strain_p = self._strain_p
         epu = self._strain_ultimate
-        if self.check_load():
+        if self._strain_increment < 0:
             if eps > self._strain_p:
                 sg = 0
             elif eps > self._strain_r and eps < self._strain_p:
@@ -262,8 +338,7 @@ class KentPark(Material):
                 elif eps > ep0:
                     sg = K * fc * (-2 * (eps / ep0) + (eps / ep0) ** 2)
                 elif eps > epu:
-                    sg = K * fc * (-1 - Z * (eps - ep0))
-                    sg = sg * (sg < -0.2 * K * fc) + -0.2 * K * fc * (sg >= -0.2 * K * fc)
+                    sg = max(K * fc * (-1 - Z * (eps - ep0)), -0.2 * K * fc)
                 else:
                     sg = 0
         else:
@@ -293,7 +368,7 @@ class KentPark(Material):
         ep0 = self._strain_0
         Z = self._Z
         self._strain_r = self._strain_r
-        sgr = self.stress_r
+        sgr = self._stress_r
         self._strain_p = self._strain_p
         epu = self._strain_ultimate
         if self.check_load():

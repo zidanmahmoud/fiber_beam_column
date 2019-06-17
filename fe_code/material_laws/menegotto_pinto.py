@@ -106,8 +106,7 @@ class MenegottoPinto(Material):
         dg = (eps_star ** R).real
         sg_star = b * eps_star + (1 - b) * eps_star / (1 + dg) ** (1 / R)
         self.stress = sg_star * (sg0 - sgr) + sgr
-        self.tangent_modulus = b + (1 - b)
-        self.tangent_modulus *= (1 + dg) ** (-1 / R) - dg * (1 + dg) ** (-1 - 1 / R)
+        self.tangent_modulus = b + (1 - b) * ((1 + dg) ** (-1 / R) - dg * (1 + dg) ** (-1 - 1 / R))
         self.tangent_modulus *= (sg0 - sgr) / (ep0 - epr)
 
     def finalize_load_step(self):
