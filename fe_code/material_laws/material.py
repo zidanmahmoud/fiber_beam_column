@@ -9,11 +9,11 @@ class Material(ABC):
     Material abstract class to be used in fiber-beam-column element
     """
     @abstractclassmethod
-    def calculate_strain_from_fiber(self, value):
+    def calculate_strain_from_fiber(self, fiber_chng_strain_increment):
         pass
 
     @abstractclassmethod
-    def reverse(self):
+    def reverse(self, nz):
         pass
 
     @abstractclassmethod

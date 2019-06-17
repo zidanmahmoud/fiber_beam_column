@@ -76,11 +76,6 @@ class Fiber:
             self._material.reverse(self._nz)
         self._reverse = False
         self._material.calculate_stress_and_tangent_modulus()
-        # if isinstance(self._material, MenegottoPinto):
-        # else:
-        #     # self._material.update_material_stress()
-        #     self._material.calculate_stress_and_tangent_modulus()
-        #     self._material.update_material_tangent_modulus()
 
     def increment_strain(self):
         """ step 10 """
@@ -94,12 +89,7 @@ class Fiber:
         """
         finalize for next load step
         """
-        if isinstance(self._material, MenegottoPinto):
-            self._material.finalize_load_step()
-        else:
-            self._material.save_to_last_loadstep_material_strain_incr(True)
-            self._material.save_to_material_strain_last_loadstep(True)
-            self._material.initialize_material_strain_incr()
+        self._material.finalize_load_step()
         self.converged_strain = self.strain
         self._strain_increment = 0.0
 

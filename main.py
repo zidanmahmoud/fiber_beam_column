@@ -241,7 +241,7 @@ def main():
     if PLOT_FLAG and not SAVE_PLOT:
         fig.show()
     if PLOT_FLAG and SAVE_PLOT:
-        fig.savefig("moment_curvature_reference.png")
+        fig.savefig("moment_curvature.png")
 
 
 if __name__ == "__main__":
