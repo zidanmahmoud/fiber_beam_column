@@ -78,17 +78,14 @@ class MenegottoPinto(Material):
 
             epr = self._strain_r
             sgr = self._stress_r
-            di = self._direction
-            sgy = self._yield_stress
+            sgy = self._direction * self._yield_stress
             lepr = self._last_strain_r
-            R0 = self._transition_0
 
-            self._strain_0 = (E * epr - sgr + di * sgy * (1 - b)) / (E * (1 - b))
-            self._stress_0 = b * E * self._strain_0 + di * sgy * (1 - b)
-
-            eps_intersect = (sgr - lepr + E * b * lepr - E * lepr) / (E * (b - 1))
+            self._strain_0 = (E * epr - sgr + sgy * (1 - b)) / (E * (1 - b))
+            self._stress_0 = b * E * self._strain_0 + sgy * (1 - b)
+            eps_intersect = ((sgr - lepr) + E * b * lepr - E * epr) / (E * (b - 1))
             self.cosi = abs(eps_intersect - lepr)
-            self._transition = R0 - self._a1 * self.cosi / (self._a2 + self.cosi)
+            self._transition = self._transition_0 - self._a1 * self.cosi / (self._a2 + self.cosi)
             self.cosi = 0.0
 
     def calculate_stress_and_tangent_modulus(self):
