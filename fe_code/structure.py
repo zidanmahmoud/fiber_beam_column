@@ -4,7 +4,7 @@ Module contains the structure class
 import numpy as np
 
 from .node import Node
-from .dof import Dof
+from .dof import DoF
 from .fiber_beam import FiberBeam
 from .io import warning
 
@@ -23,7 +23,7 @@ def dof_from_index(index):
     for key, value in DOF_INDEX_MAP.items():
         if value == index % 6:
             dof_type = key
-    return Dof(node_id, dof_type)
+    return DoF(node_id, dof_type)
 
 
 class Structure:
@@ -65,8 +65,9 @@ class Structure:
         self._load_factor_increment = 0.0
         self._load_factor = 0.0
         self.converged_load_factor = 0.0
-        self.controled_dof_increment = 0.4
+        self.controled_dof_increment = 0.0
 
+        # initialized as None because the number of dofs is not yet determined
         self._stiffness = None
         self._unbalanced_forces = None
         self._displacement_increment = None
@@ -122,18 +123,23 @@ class Structure:
     def add_dirichlet_condition(self, node_id, dof_types, value):
         """ add a dirichlet boundary condition """
         for dof_type in dof_types:
-            dof = Dof(node_id, dof_type)
+            dof = DoF(node_id, dof_type)
             self._dirichlet_conditions[dof] = value
 
     def add_neumann_condition(self, node_id, dof_types, value):
         """ add a Neumann boundary condition """
         for dof_type in dof_types:
-            dof = Dof(node_id, dof_type)
+            dof = DoF(node_id, dof_type)
             self._newmann_conditions[dof] = value
 
     def set_controled_dof(self, node_id, dof_type):
         """ sets the controled dof """
-        self.controled_dof = Dof(node_id, dof_type)
+        self.controled_dof = DoF(node_id, dof_type)
+
+    @property
+    def converged_controled_dof(self):
+        """ converged_controled_dof """
+        return self.converged_displacement[index_from_dof(self.controled_dof)]
 
     def initialize(self):
         """ initialize all arrays and stuff """
@@ -152,7 +158,7 @@ class Structure:
         stiffness_matrix = np.zeros((self.no_dofs, self.no_dofs))
 
         for element in self.elements:
-            k_e = element.calculate_global_stiffness_matrix()
+            k_e = element.get_global_stiffness_matrix()
             i = [index_from_dof(dof) for dof in element.dofs]
             stiffness_matrix[np.ix_(i, i)] = k_e  # stiffness_matrix[i][:i] = k_e
 
@@ -164,12 +170,6 @@ class Structure:
             dof, value = condition
             forces[index_from_dof(dof)] += self._load_factor * value
         return forces
-
-    def _construct_unbalance_forces_first_iteration(self):
-        self._unbalanced_forces = np.zeros(self.no_dofs)
-        for condition in self._newmann_conditions.items():
-            dof, value = condition
-            self._unbalanced_forces[index_from_dof(dof)] += self._load_factor * value
 
     def solve(self, max_ele_iterations):
         """
@@ -215,6 +215,7 @@ class Structure:
                 element.calculate_forces()
                 # STEP 8-12
                 element.state_determination()
+                element.calculate_displacement_residuals()
 
             # STEPS 13-15
             conv = True
@@ -225,15 +226,11 @@ class Structure:
             if conv:  # all elements converged
                 self._calculate_stiffness_matrix()
                 for element in self.elements:
-                    element.displacement_residual = None
+                    element.displacement_residual.fill(0.0)
                     for section in element.sections:
-                        section.residual = np.zeros(3)
+                        section.residual.fill(0.0)
                 print(f"Elements converged with {j} iteration(s).")
                 break
-
-            # AAAND ... BACK TO STEP 6
-            for element in self.elements:
-                element.calculate_displacement_residuals()
 
             if j == max_ele_iterations:
                 warning(f"ELEMENTS DID NOT CONVERGE WITH {max_ele_iterations} ITERATIONS")
@@ -242,7 +239,7 @@ class Structure:
         """ steps 18-20 """
         resisting_forces = np.zeros(self.no_dofs)
         for element in self.elements:
-            f_e = element.l_e @ element.resisting_forces
+            f_e = element.get_global_resisting_forces()
             i = [index_from_dof(dof) for dof in element.dofs]
             resisting_forces[i] += f_e
         for dof, value in self._dirichlet_conditions.items():
@@ -252,8 +249,8 @@ class Structure:
         external_forces = self._calculate_force_vector()
 
         self._unbalanced_forces = external_forces - resisting_forces
-
-        return abs(np.linalg.norm(self._unbalanced_forces)) < self._tolerance
+        res = abs(np.linalg.norm(self._unbalanced_forces))
+        return res < self._tolerance, res
 
     def finalize_load_step(self):
         """ step 21 """
@@ -261,6 +258,9 @@ class Structure:
         self._load_factor_increment = 0.0
         self.converged_displacement = self._displacement
         self.converged_load_factor = self._load_factor
+        for node in self.nodes:
+            indices = [index_from_dof(DoF(node.id, dof_type)) for dof_type in "uvw"]
+            node.u, node.v, node.w = self.converged_displacement[indices]
         for element in self.elements:
             element.finalize_load_step()
 

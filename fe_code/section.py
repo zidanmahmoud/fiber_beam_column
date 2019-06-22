@@ -8,8 +8,17 @@ from .fiber import Fiber
 
 class Section:
     """ Section class
+
     Attributes
     ----------
+    fibers : dict_values
+
+    position : float
+        position based on Gauss-Lobatto rule
+    weight : float
+        weight based on Gauss-Lobatto rule
+    residual : ndarray
+        norm of the unbalance forces
     """
 
     def __init__(self):
@@ -21,13 +30,13 @@ class Section:
 
         self.stiffness_matrix = np.zeros((3, 3))
 
-        self.chng_def_increment = np.zeros(3)
+        self._chng_def_increment = np.zeros(3)
         self._chng_force_increment = np.zeros(3)
         self._deformation_increment = np.zeros(3)
         self._force_increment = np.zeros(3)
-        self.converged_section_forces = np.zeros(3)
-        self.forces = np.zeros(3)
-        self.unbalance_forces = np.zeros(3)
+        self._converged_section_forces = np.zeros(3)
+        self._forces = np.zeros(3)
+        self._unbalance_forces = np.zeros(3)
         self.residual = np.zeros(3)
 
     @property
@@ -61,10 +70,10 @@ class Section:
     def update_stiffness_matrix(self):
         """section stiffness matrix
         """
-        self.stiffness_matrix[:, :] = 0
+        self.stiffness_matrix.fill(0.0)
         for fiber in self.fibers:
             EA = fiber.tangent_stiffness * fiber.area
-            self.stiffness_matrix += EA * np.outer(fiber.direction, fiber.direction)
+            self.stiffness_matrix += EA * fiber.direction_matrix
 
     def calculate_force_increment_from_element(self, ele_chng_force_increment):
         """ step 8 """
@@ -74,41 +83,40 @@ class Section:
 
     def increment_section_forces(self):
         """ step 8 """
-        self.forces = self.converged_section_forces + self._force_increment
+        self._forces = self._converged_section_forces + self._force_increment
 
     def calculate_deformation_increment(self):
         """ step 9 """
         f_e = np.linalg.inv(self.stiffness_matrix)
-        self.chng_def_increment = self.residual + f_e @ self._chng_force_increment
-        self._deformation_increment += self.chng_def_increment
+        self._chng_def_increment = self.residual + f_e @ self._chng_force_increment
+        self._deformation_increment += self._chng_def_increment
 
     def calculate_fiber_deformation_increment(self):
         """ step 10 """
         for fiber in self.fibers:
-            fiber.calculate_strain_increment_from_section(self.chng_def_increment)
+            fiber.calculate_strain_increment_from_section(self._chng_def_increment)
             fiber.increment_strain()
             fiber.calculate_stress()
 
     def check_convergence(self):
         """ steps 13-15 """
+        return abs(np.linalg.norm(self._unbalance_forces)) < self._tolerance
+
+    def calculate_residuals(self):
+        """
+        residuals (norm of the unbalance forces)
+        """
         resisting_forces = np.zeros(3)
         for fiber in self.fibers:
             resisting_forces += fiber.stress * fiber.area * fiber.direction
-        self.unbalance_forces = self.forces - resisting_forces
-        return abs(np.linalg.norm(self.unbalance_forces)) < self._tolerance
-
-    def calculate_displacement_residuals(self):
-        self.residual = np.linalg.inv(self.stiffness_matrix) @ self.unbalance_forces
-
-    # def save_nr_iteration(self):
-    #     self._force_increment = None
-    #     self._deformation_increment = None
-    #     self.converged_section_forces = self.forces
-    #     for fiber in self.fibers:
-    #         fiber.save_nr_iteration()
+        self._unbalance_forces = self._forces - resisting_forces
+        self.residual = np.linalg.inv(self.stiffness_matrix) @ self._unbalance_forces
 
     def finalize_load_step(self):
-        self.converged_section_forces = self.forces
+        """
+        finalize for next load step
+        """
+        self._converged_section_forces = self._forces
         self._deformation_increment = np.zeros(3)
         self._force_increment = np.zeros(3)
         for fiber in self.fibers:

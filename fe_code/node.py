@@ -1,11 +1,21 @@
-"""This module only contains the Node class.
+"""
+This module only contains the Node class.
 """
 
 import numpy as np
 
 
-class Node(object):
+class Node:
     """Three dimensional Node providing Dofs for displacements.
+
+    Parameters
+    ----------
+    x : float
+        Initial X coordinate of the node.
+    y : float
+        Initial Y coordinate of the node.
+    z : float
+        Initial Z coordinate of the node.
 
     Attributes
     ----------
@@ -30,17 +40,6 @@ class Node(object):
     """
 
     def __init__(self, node_id, x, y, z):
-        """Create a new node.
-
-        Parameters
-        ----------
-        x : float
-            Initial X coordinate of the node.
-        y : float
-            Initial Y coordinate of the node.
-        z : float
-            Initial Z coordinate of the node.
-        """
         self._id = node_id
         self._x = x
         self._y = y
@@ -51,18 +50,22 @@ class Node(object):
 
     @property
     def id(self):
+        """ id """
         return self._id
 
     @property
     def u(self):
+        """ Displacement in x direction. """
         return self._x - self.reference_x
 
     @u.setter
     def u(self, value):
+        """ Displacement in y direction. """
         self._x = self.reference_x + value
 
     @property
     def v(self):
+        """ Displacement in y direction. """
         return self._y - self.reference_y
 
     @v.setter
@@ -71,6 +74,7 @@ class Node(object):
 
     @property
     def w(self):
+        """ Displacement in z direction. """
         return self._z - self.reference_z
 
     @w.setter
