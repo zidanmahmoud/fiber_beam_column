@@ -69,7 +69,7 @@ def model_structure():
 def add_solution_parameters(structure):
     """ add tolerance values and boundary conditions """
     # CONVERGENCE TOLERANCE VALUES
-    structure.tolerance = 1e-10
+    structure.tolerance = 0.05
     structure.set_section_tolerance(0.05)
 
     # BOUNDARY CONDITIONS
@@ -160,7 +160,7 @@ def initiate_plot_3d(structure):
     axes.view_init(elev=0, azim=-90)
     axes.set_xlim3d(min(x) - 1, max(x) + 1)
     axes.set_ylim3d(min(y) - 1, max(y) + 1)
-    axes.set_zlim3d(-4, 4)
+    axes.set_zlim3d(-6, 6)
     return fig, axes, line
 
 
@@ -189,7 +189,7 @@ def update_plot_3d(axes, line, structure):
     line.set_3d_properties(z)
     axes.set_xlim3d(min(x) - 1, max(x) + 1)
     axes.set_ylim3d(min(y) - 1, max(y) + 1)
-    axes.set_zlim3d(-4, 4)
+    axes.set_zlim3d(-6, 6)
     axes.set_top_view()
     axes.get_figure().canvas.draw()
     plt.pause(1e-20)

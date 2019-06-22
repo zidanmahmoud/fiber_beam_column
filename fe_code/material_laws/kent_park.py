@@ -2,7 +2,6 @@
 Module contains only KentPark class
 """
 
-import numpy as np
 from .material import Material
 
 
@@ -61,7 +60,7 @@ class KentPark(Material):
             ep0 = self._strain_0
             if critical_point >= 2:
                 self._strain_p = ep0 * (0.707 * (critical_point - 2) + 0.834)
-            elif critical_point > 0:
+            elif critical_point < 0:
                 self._strain_p = ep0 * (0.145 * critical_point ** 2 + 0.13 * critical_point)
 
     def calculate_stress_and_tangent_modulus(self):
@@ -78,52 +77,85 @@ class KentPark(Material):
         Z = self._Z
         fc = self._compressive_strength
 
-        if self._strain_increment < 0:
+        # if self._strain_increment < 0:
+        #     if eps >= epp:
+        #         sg = 0.0
+        #         Et = 0.0
+        #     elif epr <= eps < epp:
+        #         sg = sgr / (epr - epp) * (eps - epr) + sgr
+        #         Et = sgr / (epr - epp)
+        #     elif eps < epr:
+        #         if eps > 0:
+        #             sg = 0.0
+        #             Et = 0.0
+        #         elif eps > ep0:
+        #             sg = K * fc * (-2 * (eps / ep0) + (eps / ep0) ** 2)
+        #             Et = K * fc * (-(2 / ep0) + (eps / ep0) * 2 / ep0)
+        #         elif eps > epu:
+        #             # sg = max(K * fc * (-1 - Z * (eps - ep0)), -0.2 * K * fc)
+        #             sg = K * fc * (-1 - Z * (eps - ep0))
+        #             if sg < -0.2 * K * fc:
+        #                 Et = -K * fc * Z
+        #             else:
+        #                 sg = -0.2 * K * fc
+        #                 Et = 0.0
+        #         else:
+        #             sg = 0.0
+        #             Et = 0.0
+        # else:
+        #     if eps <= epr:
+        #         if eps > 0:
+        #             sg = 0.0
+        #             Et = 0.0
+        #         elif eps > ep0:
+        #             sg = K * fc * (-2 * (eps / ep0) + (eps / ep0) ** 2)
+        #             Et = K * fc * (-(2 / ep0) + (eps / ep0) * 2 / ep0)
+        #         elif eps > epu:
+        #             # sg = max(K * fc * (-1 - Z * (eps - ep0)), -0.2 * K * fc)
+        #             sg = K * fc * (-1 - Z * (eps - ep0))
+        #             if sg < -0.2 * K * fc:
+        #                 Et = -K * fc * Z
+        #             else:
+        #                 sg = -0.2 * K * fc
+        #                 Et = 0.0
+        #         else:
+        #             sg = 0.0
+        #             Et = 0.0
+
+        #     elif eps < epp:
+        #         sg = sgr / (epr - epp) * (eps - epr) + sgr
+        #         Et = sgr / (epr - epp)
+        #     else:
+        #         sg = 0.0
+        #         Et = 0.0
+
+        if eps <= epr:
+            if eps > 0:
+                sg = 0.0
+                Et = 0.0
+            elif eps > ep0:
+                sg = K * fc * (-2 * (eps / ep0) + (eps / ep0) ** 2)
+                Et = K * fc * (-(2 / ep0) + (eps / ep0) * 2 / ep0)
+            elif eps > epu:
+                # sg = max(K * fc * (-1 - Z * (eps - ep0)), -0.2 * K * fc)
+                sg = K * fc * (-1 - Z * (eps - ep0))
+                if sg < -0.2 * K * fc:
+                    Et = -K * fc * Z
+                else:
+                    sg = -0.2 * K * fc
+                    Et = 0.0
+            else:
+                sg = 0.0
+                Et = 0.0
+        elif self._strain_increment < 0:
             if eps >= epp:
                 sg = 0.0
                 Et = 0.0
             elif epr <= eps < epp:
                 sg = sgr / (epr - epp) * (eps - epr) + sgr
                 Et = sgr / (epr - epp)
-            elif eps < epr:
-                if eps > 0:
-                    sg = 0.0
-                    Et = 0.0
-                elif eps > ep0:
-                    sg = K * fc * (-2 * (eps / ep0) + (eps / ep0) ** 2)
-                    Et = K * fc * (-(2 / ep0) + (eps / ep0) * 2 / ep0)
-                elif eps > epu:
-                    # sg = max(K * fc * (-1 - Z * (eps - ep0)), -0.2 * K * fc)
-                    sg = K * fc * (-1 - Z * (eps - ep0))
-                    if sg < -0.2 * K * fc:
-                        Et = -K * fc * Z
-                    else:
-                        sg = -0.2 * K * fc
-                        Et = 0.0
-                else:
-                    sg = 0.0
-                    Et = 0.0
         else:
-            if eps <= epr:
-                if eps > 0:
-                    sg = 0.0
-                    Et = 0.0
-                elif eps > ep0:
-                    sg = K * fc * (-2 * (eps / ep0) + (eps / ep0) ** 2)
-                    Et = K * fc * (-(2 / ep0) + (eps / ep0) * 2 / ep0)
-                elif eps > epu:
-                    # sg = max(K * fc * (-1 - Z * (eps - ep0)), -0.2 * K * fc)
-                    sg = K * fc * (-1 - Z * (eps - ep0))
-                    if sg < -0.2 * K * fc:
-                        Et = -K * fc * Z
-                    else:
-                        sg = -0.2 * K * fc
-                        Et = 0.0
-                else:
-                    sg = 0.0
-                    Et = 0.0
-
-            elif eps < epp:
+            if eps < epp:
                 sg = sgr / (epr - epp) * (eps - epr) + sgr
                 Et = sgr / (epr - epp)
             else:

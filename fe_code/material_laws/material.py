@@ -4,10 +4,12 @@ Module contains the class Material
 
 from abc import ABC, abstractclassmethod
 
+
 class Material(ABC):
     """
     Material abstract class to be used in fiber-beam-column element
     """
+
     @abstractclassmethod
     def calculate_strain_from_fiber(self, fiber_chng_strain_increment):
         pass
