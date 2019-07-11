@@ -15,10 +15,6 @@ class Material(ABC):
         pass
 
     @abstractclassmethod
-    def reverse(self, nz):
-        pass
-
-    @abstractclassmethod
     def calculate_stress_and_tangent_modulus(self):
         pass
 

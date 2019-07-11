@@ -71,10 +71,15 @@ class Fiber:
         self._chng_strain_increment = self.direction @ sec_chng_def_increment
         self._strain_increment += self._chng_strain_increment
 
-        self._material.calculate_strain_from_fiber(self._chng_strain_increment)
-        if self._reverse:  # FIXME: this should be a check reversal
-            self._material.reverse(self._nz)
-        self._reverse = False
+        if isinstance(self._material, MenegottoPinto):
+            self._material.calculate_strain_from_fiber(self._chng_strain_increment)
+
+        else:
+            self._material.calculate_strain_from_fiber(self._chng_strain_increment)
+            if self._reverse:  # FIXME: this should be a check reversal
+                self._material.reverse(self._nz)
+            self._reverse = False
+
         self._material.calculate_stress_and_tangent_modulus()
 
     def increment_strain(self):

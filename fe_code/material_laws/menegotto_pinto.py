@@ -4,6 +4,8 @@ Module contains only MenegottoPinto class
 
 from .material import Material
 
+TOLERANCE = 1e-4
+
 
 class MenegottoPinto(Material):
     """
@@ -28,7 +30,7 @@ class MenegottoPinto(Material):
 
         self._yield_strain = yield_stress / youngs_modulus
         self._b = asymptotic_modulus / youngs_modulus
-        self.cosi = 0.0  # TODO: understand this!
+        self._xi = 0.0
         self._transition_0 = transition
 
         self._strain_r = 0.0
@@ -40,12 +42,11 @@ class MenegottoPinto(Material):
 
         self._chng_strain_increment = 0.0
         self._strain_increment = 0.0
-        self._converged_strain_increment = 0.0  # TODO: understand why do we need dis
         self._strain = 0.0
         self._converged_strain = 0.0
+        self._last_converged_strain = 0.0
 
         self.stress = 0.0
-        # self.converged_stress = 0.0
 
         self._direction = 0
 
@@ -57,36 +58,49 @@ class MenegottoPinto(Material):
         self._strain_increment += self._chng_strain_increment
         self._strain = self._converged_strain + self._strain_increment
 
-    def reverse(self, nz):  # TODO: FIX THIS WHOLE FFUUNNCCTTIIOONN
+        if self._check_reversal():
+            self._reverse()
+
+
+    def _check_reversal(self):
+        # if strain was increasing
+        if self._converged_strain - self._last_converged_strain > 0:
+            # if the new strain is decreasing
+            if self._strain < self._converged_strain:
+                return True
+
+        # else if strain was decreasing
+        if self._converged_strain - self._last_converged_strain < 0:
+            # if the new strain is increasing
+            if self._strain > self._converged_strain:
+                return True
+
+        return False
+
+    def _reverse(self):
         """
         FIXME
         """
 
         E = self._youngs_modulus
         b = self._b
+        self._last_strain_r = self._strain_r
+        self._last_stress_r = self._stress_r
+        self._strain_r = self._strain
+        self._stress_r = self.stress
+        self._direction *= -1
 
-        if self._converged_strain_increment == 0:
-            if nz > 4:
-                self._strain_0 *= -1
-                self._stress_0 *= -1
-        else:
-            self._last_strain_r = self._strain_r
-            self._last_stress_r = self._stress_r
-            self._strain_r = self._strain
-            self._stress_r = self.stress
-            self._direction *= -1
+        epr = self._strain_r
+        sgr = self._stress_r
+        sgy = self._direction * self._yield_stress
+        lepr = self._last_strain_r
 
-            epr = self._strain_r
-            sgr = self._stress_r
-            sgy = self._direction * self._yield_stress
-            lepr = self._last_strain_r
-
-            self._strain_0 = (E * epr - sgr + sgy * (1 - b)) / (E * (1 - b))
-            self._stress_0 = b * E * self._strain_0 + sgy * (1 - b)
-            eps_intersect = ((sgr - lepr) + E * b * lepr - E * epr) / (E * (b - 1))
-            self.cosi = abs(eps_intersect - lepr)
-            self._transition = self._transition_0 - self._a1 * self.cosi / (self._a2 + self.cosi)
-            self.cosi = 0.0
+        self._strain_0 = (E * epr - sgr + sgy * (1 - b)) / (E * (1 - b))
+        self._stress_0 = b * E * self._strain_0 + sgy * (1 - b)
+        eps_intersect = ((sgr - lepr) + E * b * lepr - E * epr) / (E * (b - 1))
+        self._xi = abs(eps_intersect - lepr)
+        self._transition = self._transition_0 - self._a1 * self._xi / (self._a2 + self._xi)
+        self._xi = 0.0
 
     def calculate_stress_and_tangent_modulus(self):
         """
@@ -113,16 +127,12 @@ class MenegottoPinto(Material):
         """
         FIXME
         """
-        self._converged_strain_increment = self._strain_increment
         self._strain_increment = 0.0
+        self._last_converged_strain = self._converged_strain
         self._converged_strain = self._strain
-        # self.converged_stress = self.stress
 
     def determin_direction(self, nz):
         """
         FIXME
         """
-        if nz > 4:
-            self._direction = -1
-        elif nz <= 4:
-            self._direction = 1
+        self._direction = 1
