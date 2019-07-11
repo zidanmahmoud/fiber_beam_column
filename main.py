@@ -8,7 +8,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from fe_code import io, Structure, MenegottoPinto, KentPark
 
 PLOT_FLAG = True
-SAVE_PLOT = True
+SAVE_PLOT = False
 
 # == MODELING PARAMETERS
 LENGTH = 100.0
@@ -74,7 +74,6 @@ def add_solution_parameters(structure):
 
     # BOUNDARY CONDITIONS
     structure.set_controled_dof(2, "w")
-    structure.add_neumann_condition(2, "w", 1.0)
     structure.add_dirichlet_condition(1, "uvwxyz", 0)
     structure.add_dirichlet_condition(2, "x", 0)
     structure.add_dirichlet_condition(2, "z", 0.005)  # useless
@@ -190,7 +189,6 @@ def update_plot_3d(axes, line, structure):
     axes.set_xlim3d(min(x) - 1, max(x) + 1)
     axes.set_ylim3d(min(y) - 1, max(y) + 1)
     axes.set_zlim3d(-6, 6)
-    axes.set_top_view()
     axes.get_figure().canvas.draw()
     plt.pause(1e-20)
 
@@ -239,7 +237,7 @@ def main():
     print("\n:: Finished solution loop ::")
 
     if PLOT_FLAG and not SAVE_PLOT:
-        fig.show()
+        plt.show()
     if PLOT_FLAG and SAVE_PLOT:
         fig.savefig("moment_curvature.png")
 

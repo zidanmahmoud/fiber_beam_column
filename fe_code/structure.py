@@ -166,9 +166,8 @@ class Structure:
 
     def _calculate_force_vector(self):
         forces = np.zeros(self.no_dofs)
-        for condition in self._newmann_conditions.items():
-            dof, value = condition
-            forces[index_from_dof(dof)] += self._load_factor * value
+        dof = self.controled_dof
+        forces[index_from_dof(dof)] += self._load_factor
         return forces
 
     def solve(self, max_ele_iterations):
