@@ -2,7 +2,6 @@
 Module contains only the fiber class
 """
 import numpy as np
-from .material_laws import MenegottoPinto
 
 
 class Fiber:
@@ -52,12 +51,6 @@ class Fiber:
         """
         return self._material.tangent_modulus
 
-    def initialize(self):
-        """
-        TODO: get rid of this
-        """
-        pass
-
     def calculate_strain_increment_from_section(self, sec_chng_def_increment):
         """ step 10 + 11 """
         self._chng_strain_increment = self.direction @ sec_chng_def_increment
@@ -80,9 +73,3 @@ class Fiber:
         self._material.finalize_load_step()
         self.converged_strain = self.strain
         self._strain_increment = 0.0
-
-    # def reverse_loading(self):
-    #     """
-    #     to reverse material stuff ONLY in the first iteration
-    #     """
-    #     pass

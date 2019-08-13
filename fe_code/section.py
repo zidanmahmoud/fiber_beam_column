@@ -38,6 +38,7 @@ class Section:
         self._forces = np.zeros(3)
         self._unbalance_forces = np.zeros(3)
         self.residual = np.zeros(3)
+        self._b_matrix = None
 
     @property
     def tolerance(self):
@@ -53,6 +54,12 @@ class Section:
         """fibers list"""
         return self._fibers.values()
 
+    @property
+    def b_matrix(self):
+        if self._b_matrix is None:
+            self._b_matrix = _calculate_b_matrix(self.position)
+        return self._b_matrix
+
     def add_fiber(self, fiber_id, y, z, area, material_class):
         """add a fiber to the section
 
@@ -62,9 +69,7 @@ class Section:
         self._fibers[fiber_id] = Fiber(y, z, area, material_class)
 
     def initialize(self):
-        """probably unnecessary"""
-        for fiber in self.fibers:
-            fiber.initialize()
+        """initialize stiffness matrix"""
         self.update_stiffness_matrix()
 
     def update_stiffness_matrix(self):
@@ -77,7 +82,7 @@ class Section:
 
     def calculate_force_increment_from_element(self, ele_chng_force_increment):
         """ step 8 """
-        b_matrix = _calculate_b_matrix(self.position)
+        b_matrix = self.b_matrix
         self._chng_force_increment = b_matrix @ ele_chng_force_increment
         self._force_increment += self._chng_force_increment
 
