@@ -84,44 +84,20 @@ def advance_in_load(structure, load_step):
     if load_step < 10 + 1:
         structure.controled_dof_increment = 0.4
 
-    # elif load_step == 10 + 1:
-    #     structure.reverse_all_fibers()
-    #     structure.controled_dof_increment = -0.01 * 0.4
-
     elif load_step < 30 + 1:
         structure.controled_dof_increment = -0.4
-
-    # elif load_step == 30 + 1:
-    #     structure.reverse_all_fibers()
-    #     structure.controled_dof_increment = 0.01 * 0.4
 
     elif load_step < 55 + 1:
         structure.controled_dof_increment = 0.4
 
-    # elif load_step == 55 + 1:
-    #     structure.reverse_all_fibers()
-    #     structure.controled_dof_increment = -0.01 * 0.4
-
     elif load_step < 85 + 1:
         structure.controled_dof_increment = -0.4
-
-    # elif load_step == 85 + 1:
-    #     structure.reverse_all_fibers()
-    #     structure.controled_dof_increment = 0.01 * 0.4
 
     elif load_step < 101 + 1:
         structure.controled_dof_increment = 0.4
 
-    # elif load_step == 101 + 1:
-    #     structure.reverse_all_fibers()
-    #     structure.controled_dof_increment = -0.01 * 0.4
-
     elif load_step < 112 + 1:
         structure.controled_dof_increment = -0.4
-
-    # elif load_step == 112 + 1:
-    #     structure.reverse_all_fibers()
-    #     structure.controled_dof_increment = 0.01 * 0.4
 
     else:
         structure.controled_dof_increment = 0.4
