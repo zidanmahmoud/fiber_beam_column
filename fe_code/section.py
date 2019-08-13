@@ -53,13 +53,13 @@ class Section:
         """fibers list"""
         return self._fibers.values()
 
-    def add_fiber(self, fiber_id, y, z, ny, nz, area, material_class):
+    def add_fiber(self, fiber_id, y, z, area, material_class):
         """add a fiber to the section
 
         Parameters
         ----------
         """
-        self._fibers[fiber_id] = Fiber(y, z, ny, nz, area, material_class)
+        self._fibers[fiber_id] = Fiber(y, z, area, material_class)
 
     def initialize(self):
         """probably unnecessary"""

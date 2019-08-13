@@ -17,51 +17,95 @@ class KentPark(Material):
 
     """
 
-    def __init__(self, compressive_strength, confinement_factor, epu, Z):
-        self._compressive_strength = compressive_strength
-        self._confinement_factor = confinement_factor
-        self._strain_0 = -0.0027 * confinement_factor
-        self._strain_ultimate = epu
+    def __init__(self, fc, K, Z, e0=0.002):
+        self._fc = fc
+        self._K = K
+        self._strain_0 = -e0 * K
         self._Z = Z
+        self._Et = 2 * fc / self._strain_0
 
+        # Loading index:
+        #   0 => initial state
+        #   1 => increasing strain
+        #   2 => decreasing strain
+        #   3 => strain not changing
+        self._loading_index = 0
+        self._strain_p = 0.0
         self._strain_r = 0.0
         self._stress_r = 0.0
-        self._strain_p = 0.0
-
-        self._chng_strain_increment = 0.0
-        self._converged_strain_increment = 0.0
-        self._converged_strain = 0.0
-        self._converged_stress = 0.0
-        self._strain_increment = 0.0
         self._strain = 0.0
-        self.stress = 0.0
-        self.tangent_modulus = (
-            -2 * self._compressive_strength * self._confinement_factor / self._strain_0
-        )
         self._stress = 0.0
 
-    def calculate_strain_from_fiber(self, fiber_chng_strain_increment):
+        # == converged variables
+        self._c_loading_index = 0
+        self._c_strain_p = 0.0
+        self._c_strain_r = 0.0
+        self._c_stress_r = 0.0
+        self._c_strain = 0.0
+        self._c_stress = 0.0
+
+    @classmethod
+    def eu(cls, fc, K, eu, e0=0.002):
+        """
+        Overloading the default constructor with eu
+        instead of Z
+        """
+        Z = 0.8 / (eu - e0)
+        return cls(fc, K, Z, e0)
+
+    @property
+    def tangent_modulus(self):
+        return self._Et
+
+    @property
+    def stress(self):
+        return self._stress
+
+    @property
+    def strain(self):
+        return self._strain
+
+    def update_strain(self, fiber_strain):
         """
         FIXME
         """
-        self._chng_strain_increment = fiber_chng_strain_increment
-        self._strain_increment += self._chng_strain_increment
-        self._strain = self._converged_strain + self._strain_increment
+        self._strain = fiber_strain
+        self._set_trial_state()
 
-    def reverse(self, nz):
+    def _set_trial_state(self):
+        deps = self._strain - self._c_strain
+        if abs(deps) < 1e-15:  # nearly zero
+            self._loading_index = 3
+        else:
+            if deps < 0:
+                self._loading_index = 2
+            else:
+                self._loading_index = 1
+        reversal = self.check_reversal()
+        if reversal:
+            self.reverse()
+
+    def check_reversal(self):
+        if abs(self._strain) > 1e-15:
+            if self._strain < 0:
+                if self._c_loading_index in (2, 3):
+                    if self._loading_index == 1:
+                        return True
+        return False
+
+    def reverse(self):
         """
         FIXME
         """
-        if self._strain < 0:
-            self._strain_r = self._converged_strain
-            self._stress_r = self._converged_stress
+        self._strain_r = self._c_strain
+        self._stress_r = self._c_stress
 
-            critical_point = self._strain_r / self._strain_0
-            ep0 = self._strain_0
-            if critical_point >= 2:
-                self._strain_p = ep0 * (0.707 * (critical_point - 2) + 0.834)
-            elif critical_point < 0:
-                self._strain_p = ep0 * (0.145 * critical_point ** 2 + 0.13 * critical_point)
+        crit = self._strain_r / self._strain_0
+        ep0 = self._strain_0
+        if crit >= 2:
+            self._strain_p = ep0 * (0.707 * (crit - 2) + 0.834)
+        elif crit < 2:
+            self._strain_p = ep0 * (0.145 * crit ** 2 + 0.13 * crit)
 
     def calculate_stress_and_tangent_modulus(self):
         """
@@ -71,114 +115,57 @@ class KentPark(Material):
         ep0 = self._strain_0
         epp = self._strain_p
         epr = self._strain_r
-        epu = self._strain_ultimate
         sgr = self._stress_r
-        K = self._confinement_factor
+        K = self._K
         Z = self._Z
-        fc = self._compressive_strength
+        fc = self._fc
 
-        # if self._strain_increment < 0:
-        #     if eps >= epp:
-        #         sg = 0.0
-        #         Et = 0.0
-        #     elif epr <= eps < epp:
-        #         sg = sgr / (epr - epp) * (eps - epr) + sgr
-        #         Et = sgr / (epr - epp)
-        #     elif eps < epr:
-        #         if eps > 0:
-        #             sg = 0.0
-        #             Et = 0.0
-        #         elif eps > ep0:
-        #             sg = K * fc * (-2 * (eps / ep0) + (eps / ep0) ** 2)
-        #             Et = K * fc * (-(2 / ep0) + (eps / ep0) * 2 / ep0)
-        #         elif eps > epu:
-        #             # sg = max(K * fc * (-1 - Z * (eps - ep0)), -0.2 * K * fc)
-        #             sg = K * fc * (-1 - Z * (eps - ep0))
-        #             if sg < -0.2 * K * fc:
-        #                 Et = -K * fc * Z
-        #             else:
-        #                 sg = -0.2 * K * fc
-        #                 Et = 0.0
-        #         else:
-        #             sg = 0.0
-        #             Et = 0.0
-        # else:
-        #     if eps <= epr:
-        #         if eps > 0:
-        #             sg = 0.0
-        #             Et = 0.0
-        #         elif eps > ep0:
-        #             sg = K * fc * (-2 * (eps / ep0) + (eps / ep0) ** 2)
-        #             Et = K * fc * (-(2 / ep0) + (eps / ep0) * 2 / ep0)
-        #         elif eps > epu:
-        #             # sg = max(K * fc * (-1 - Z * (eps - ep0)), -0.2 * K * fc)
-        #             sg = K * fc * (-1 - Z * (eps - ep0))
-        #             if sg < -0.2 * K * fc:
-        #                 Et = -K * fc * Z
-        #             else:
-        #                 sg = -0.2 * K * fc
-        #                 Et = 0.0
-        #         else:
-        #             sg = 0.0
-        #             Et = 0.0
+        # == inequality signs are reversed compared to theory becuase of the negative signs
 
-        #     elif eps < epp:
-        #         sg = sgr / (epr - epp) * (eps - epr) + sgr
-        #         Et = sgr / (epr - epp)
-        #     else:
-        #         sg = 0.0
-        #         Et = 0.0
+        # positive strain
+        if eps >= 0:
+            self._stress = 0.0
+            self._Et = 0.0
+            return
 
+        # loading path
         if eps <= epr:
-            if eps > 0:
-                sg = 0.0
-                Et = 0.0
-            elif eps > ep0:
-                sg = K * fc * (-2 * (eps / ep0) + (eps / ep0) ** 2)
-                Et = K * fc * (-(2 / ep0) + (eps / ep0) * 2 / ep0)
-            elif eps > epu:
-                # sg = max(K * fc * (-1 - Z * (eps - ep0)), -0.2 * K * fc)
-                sg = K * fc * (-1 - Z * (eps - ep0))
-                if sg < -0.2 * K * fc:
-                    Et = -K * fc * Z
+            if eps >= ep0:
+                stress = K * fc * (2 * eps / ep0 - (eps / ep0)**2)
+                tangen = K * fc * (2 / ep0 - 2 * (eps / ep0**2))
+            else:
+                stress = K * fc * (1 + Z * (eps - ep0))
+                if stress < 0.2 * K * fc:
+                    stress = 0.2 * K * fc
+                    tangen = 0
                 else:
-                    sg = -0.2 * K * fc
-                    Et = 0.0
-            else:
-                sg = 0.0
-                Et = 0.0
-        elif self._strain_increment < 0:
-            if eps >= epp:
-                sg = 0.0
-                Et = 0.0
-            elif epr <= eps < epp:
-                sg = sgr / (epr - epp) * (eps - epr) + sgr
-                Et = sgr / (epr - epp)
-        else:
-            if eps < epp:
-                sg = sgr / (epr - epp) * (eps - epr) + sgr
-                Et = sgr / (epr - epp)
-            else:
-                sg = 0.0
-                Et = 0.0
+                    tangen = K * fc * Z
 
-        self.stress = sg
-        self.tangent_modulus = Et
+        # unloading path
+        else:
+            if eps >= epp:
+                self._stress = 0.0
+                self._Et = 0.0
+                return
+            stress = - (sgr * eps - epp * sgr) / (epr - epp)
+            tangen = - sgr / (epr - epp)
+
+        self._stress = -1 * stress
+        self._Et = -1 * tangen
 
     def finalize_load_step(self):
         """
         FIXME
         """
-        self._converged_strain_increment = self._strain_increment
-        self._converged_strain = self._strain
-        self._converged_stress = self.stress
-        self._strain_increment = 0.0
+        self._c_loading_index = self._loading_index
+        self._c_strain_p = self._strain_p
+        self._c_strain_r = self._strain_r
+        self._c_stress_r = self._stress_r
+        self._c_strain = self._strain
+        self._c_stress = self._stress
 
     def determin_direction(self, nz):
         """
         FIXME
         """
-        if nz > 4:
-            self._stress = -1
-        elif nz <= 4:
-            self._stress = 1
+        pass
