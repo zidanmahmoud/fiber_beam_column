@@ -8,7 +8,7 @@ import numpy as np
 
 from .section import Section
 from .dof import DoF
-from .gauss_lobatto import GaussLobatto
+from .gauss_lobatto import gauss_lobatto
 
 
 class FiberBeam:
@@ -74,7 +74,7 @@ class FiberBeam:
         """
         initialize matrices
         """
-        points, weights = GaussLobatto(len(self.sections))
+        points, weights = gauss_lobatto(len(self.sections))
         for i, section in enumerate(self.sections):
             section.initialize()
             section.position = points[i]

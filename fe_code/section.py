@@ -4,6 +4,7 @@ Section
 import numpy as np
 
 from .fiber import Fiber
+from .material_laws import Material
 
 
 class Section:
@@ -56,6 +57,7 @@ class Section:
 
     @property
     def b_matrix(self):
+        """ b_matrix """
         if self._b_matrix is None:
             self._b_matrix = _calculate_b_matrix(self.position)
         return self._b_matrix
@@ -65,7 +67,19 @@ class Section:
 
         Parameters
         ----------
+        fiber_id : int
+            id of the fiber
+        y : float
+            y coordinate
+        z : float
+            z coordinate
+        area : float
+            area of the fiber
+        material_class : object of type Material
+            material model
         """
+        if not isinstance(material_class, Material):
+            raise ValueError("mateial_class is not of type : Material")
         self._fibers[fiber_id] = Fiber(y, z, area, material_class)
 
     def initialize(self):
@@ -73,8 +87,7 @@ class Section:
         self.update_stiffness_matrix()
 
     def update_stiffness_matrix(self):
-        """section stiffness matrix
-        """
+        """ section stiffness matrix """
         self.stiffness_matrix.fill(0.0)
         for fiber in self.fibers:
             EA = fiber.tangent_stiffness * fiber.area
