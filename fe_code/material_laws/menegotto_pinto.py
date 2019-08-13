@@ -4,8 +4,6 @@ Module contains only MenegottoPinto class
 
 from .material import Material
 
-TOLERANCE = 0
-
 
 class MenegottoPinto(Material):
     """
@@ -13,10 +11,25 @@ class MenegottoPinto(Material):
 
     Parameters
     ----------
+    E : float
+        Young's Modulus
+    b : flaot
+        hardening ratio
+    fy : float
+        yield strength
+    R : float
+        initial transition variable
+    a1 : float
+        imperical parameter
+    a2 : float
+        imperical parameter
+
 
     Attributes
     ----------
-
+    tangent_modulus : float
+    stress : float
+    strain : float
     """
 
     def __init__(self, E, b, fy, R, a1, a2):
@@ -58,22 +71,35 @@ class MenegottoPinto(Material):
 
     @property
     def tangent_modulus(self):
+        """ current tangent modulus """
         return self._Et
 
     @property
     def stress(self):
+        """ current stress """
         return self._stress
 
     @property
     def strain(self):
+        """ current strain """
         return self._strain
 
     def update_strain(self, fiber_strain):
         """
-        FIXME
+        set new strain and test for reversal
+
+        Parameters
+        ----------
+        fiber_strain : float
+            fiber strain
+
+        Returns
+        -------
+        reversal : bool
+            flag True if reversed
         """
         self._strain = fiber_strain
-        self._set_trial_state()
+        return self._set_trial_state()
 
     def _set_trial_state(self):
         deps = self._strain - self._c_strain
@@ -94,8 +120,12 @@ class MenegottoPinto(Material):
         reversal = self.check_reversal()
         if reversal:
             self.reverse()
+        return reversal
 
     def check_reversal(self):
+        """
+        check for reversal
+        """
         deps = self._strain - self._c_strain
         if self._loading_index == 2 and deps > 0:
             self._loading_index = 1
@@ -107,7 +137,7 @@ class MenegottoPinto(Material):
 
     def reverse(self):
         """
-        FIXME
+        reverse the material parameters
         """
         self._last_strain_r = self._strain_r
         self._last_stress_r = self._stress_r
@@ -130,7 +160,8 @@ class MenegottoPinto(Material):
 
     def calculate_stress_and_tangent_modulus(self):
         """
-        FIXME
+        update the current stress and tangent modulus
+        based on the current strain
         """
         b = self._b
         eps = self._strain
@@ -150,7 +181,8 @@ class MenegottoPinto(Material):
 
     def finalize_load_step(self):
         """
-        FIXME
+        update the converged variables. Called when the
+        whole structure is converged at the load step
         """
         self._c_loading_index = self._loading_index
         self._c_Et = self._Et
@@ -161,9 +193,3 @@ class MenegottoPinto(Material):
         self._c_strain = self._strain
         self._c_stress = self._stress
         self._c_xi = self._xi
-
-    def determin_direction(self, nz):
-        """
-        FIXME
-        """
-        pass

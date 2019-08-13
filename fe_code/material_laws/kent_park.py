@@ -7,14 +7,30 @@ from .material import Material
 
 class KentPark(Material):
     """
-    Steel uniaxial material law
+    Concrete uniaxial material law
 
     Parameters
     ----------
+    fc : float
+        yield compressive strength
+    K : float
+        confinement factor
+    Z : float
+        softening slope
+    e0 : float
+        strain at maximum stress. default 0.002
+    eu : float, optional
+        ultimate strain (crushing)
+
+    Note :: can be construced either using
+    KentPark(fc, K, Z, e0) or
+    KentPark(fc, K, eu, e0)
 
     Attributes
     ----------
-
+    tangent_modulus : float
+    stress : float
+    strain : float
     """
 
     def __init__(self, fc, K, Z, e0=0.002):
@@ -55,22 +71,34 @@ class KentPark(Material):
 
     @property
     def tangent_modulus(self):
+        """ current tangent modulus """
         return self._Et
 
     @property
     def stress(self):
+        """ current stress """
         return self._stress
 
     @property
     def strain(self):
-        return self._strain
+        """ current strain """
 
     def update_strain(self, fiber_strain):
         """
-        FIXME
+        set new strain and test for reversal
+
+        Parameters
+        ----------
+        fiber_strain : float
+            fiber strain
+
+        Returns
+        -------
+        reversal : bool
+            flag True if reversed
         """
         self._strain = fiber_strain
-        self._set_trial_state()
+        return self._set_trial_state()
 
     def _set_trial_state(self):
         deps = self._strain - self._c_strain
@@ -84,8 +112,12 @@ class KentPark(Material):
         reversal = self.check_reversal()
         if reversal:
             self.reverse()
+        return reversal
 
     def check_reversal(self):
+        """
+        check for reversal
+        """
         if abs(self._strain) > 1e-15:
             if self._strain < 0:
                 if self._c_loading_index in (2, 3):
@@ -95,7 +127,7 @@ class KentPark(Material):
 
     def reverse(self):
         """
-        FIXME
+        reverse the material parameters
         """
         self._strain_r = self._c_strain
         self._stress_r = self._c_stress
@@ -109,7 +141,8 @@ class KentPark(Material):
 
     def calculate_stress_and_tangent_modulus(self):
         """
-        FIXME
+        update the current stress and tangent modulus
+        based on the current strain
         """
         eps = self._strain
         ep0 = self._strain_0
@@ -155,7 +188,8 @@ class KentPark(Material):
 
     def finalize_load_step(self):
         """
-        FIXME
+        update the converged variables. Called when the
+        whole structure is converged at the load step
         """
         self._c_loading_index = self._loading_index
         self._c_strain_p = self._strain_p
@@ -163,9 +197,3 @@ class KentPark(Material):
         self._c_stress_r = self._stress_r
         self._c_strain = self._strain
         self._c_stress = self._stress
-
-    def determin_direction(self, nz):
-        """
-        FIXME
-        """
-        pass
