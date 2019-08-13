@@ -57,9 +57,7 @@ def model_structure():
                         MenegottoPinto(29000, 0.0042, 60, 20, 18.5, 0.0002),
                     )
                 else:
-                    section.add_fiber(
-                        counter, y, z, fiber_area, KentPark(6.95, 1, 770, 0.0027)
-                    )
+                    section.add_fiber(counter, y, z, fiber_area, KentPark(6.95, 1, 770, 0.0027))
                 counter += 1
     print(f"Added {counter - 1} fibers.")
 

@@ -5,7 +5,9 @@ test file
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+
 matplotlib.use("Qt5Agg", warn=True)
+
 
 class KentPark:
     """
@@ -96,8 +98,8 @@ class KentPark:
         # loading path
         if eps <= epr:
             if eps >= ep0:
-                stress = K * fc * (2 * eps / ep0 - (eps / ep0)**2)
-                tangen = K * fc * (2 / ep0 - 2 * (eps / ep0**2))
+                stress = K * fc * (2 * eps / ep0 - (eps / ep0) ** 2)
+                tangen = K * fc * (2 / ep0 - 2 * (eps / ep0 ** 2))
             else:
                 stress = K * fc * (1 + Z * (eps - ep0))
                 if stress < 0.2 * K * fc:
@@ -112,29 +114,27 @@ class KentPark:
                 self.stress = 0.0
                 self.tangent_modulus = 0.0
                 return
-            stress = - (sgr * eps - epp * sgr) / (epr - epp)
-            tangen = - sgr / (epr - epp)
+            stress = -(sgr * eps - epp * sgr) / (epr - epp)
+            tangen = -sgr / (epr - epp)
 
         self.stress = -1 * stress
         self.tangent_modulus = -1 * tangen
 
 
-fiber = KentPark(
-    compressive_strength=6.95,
-    confinement_factor=1,
-    Z=770
-)
+fiber = KentPark(compressive_strength=6.95, confinement_factor=1, Z=770)
 
 fig = plt.figure()
 ax = fig.add_subplot(111)
 
-strains = np.concatenate((
-    # np.linspace(-0.000001, -0.004, num=200),
-    # np.linspace(-0.0039, -0.000001, num=200),
-    # np.linspace(-0.0000011, -0.007, num=200),
-    # np.linspace(-0.0069, -0.000001, num=200),
-    np.linspace(-0.0000011, -0.01, num=200),
-))
+strains = np.concatenate(
+    (
+        # np.linspace(-0.000001, -0.004, num=200),
+        # np.linspace(-0.0039, -0.000001, num=200),
+        # np.linspace(-0.0000011, -0.007, num=200),
+        # np.linspace(-0.0069, -0.000001, num=200),
+        np.linspace(-0.0000011, -0.01, num=200),
+    )
+)
 # strains.reshape(strains.size)
 stresses = list()
 for i, strain in enumerate(strains):
@@ -149,8 +149,5 @@ ax.invert_xaxis()
 ax.grid()
 ax.axhline(linewidth=3, color="black")
 ax.axvline(linewidth=3, color="black")
-ax.set(
-    xlabel="CONCRETE STRAIN",
-    ylabel="CONCRETE STRESS"
-)
+ax.set(xlabel="CONCRETE STRAIN", ylabel="CONCRETE STRESS")
 plt.show()

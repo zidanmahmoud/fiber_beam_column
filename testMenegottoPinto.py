@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 
 
 class MenegottoPinto:
-
     def __init__(self, E, b, fy, R, a1, a2):
         self._E = E
         self._Et = E
@@ -45,7 +44,6 @@ class MenegottoPinto:
         self._c_stress = 0.0
         self._c_xi = 0.0
 
-
     @property
     def tangent_modulus(self):
         return self._Et
@@ -58,7 +56,6 @@ class MenegottoPinto:
     def strain(self):
         return self._strain
 
-
     def update_strain(self, value):
         """
         FIXME
@@ -66,7 +63,6 @@ class MenegottoPinto:
         self._strain = value
         reversal = self._set_trial_state()
         return reversal
-
 
     def _set_trial_state(self):
         deps = self._strain - self._c_strain
@@ -89,7 +85,6 @@ class MenegottoPinto:
             self._reverse()
         return reversal
 
-
     def _check_reversal(self):
         deps = self._strain - self._c_strain
         if self._loading_index == 2 and deps > 0:
@@ -99,7 +94,6 @@ class MenegottoPinto:
             self._loading_index = 2
             return True
         return False
-
 
     def _reverse(self):
         self._last_strain_r = self._strain_r
@@ -121,11 +115,9 @@ class MenegottoPinto:
         self._xi = abs(eps_intersect - lepr)
         self._R = self._R0 - self._a1 * self._xi / (self._a2 + self._xi)
 
-
         # global ax
         # ax.plot(self._strain_0, self._stress_0, "-o", color="black")
         # ax.plot(self._strain_r, self._stress_r, "-o", color="black", markerfacecolor="none")
-
 
     def calculate_stress_and_tangent_modulus(self):
         """
@@ -140,13 +132,12 @@ class MenegottoPinto:
         R = self._R
 
         eps_star = (eps - epr) / (ep0 - epr)
-        dum1 = 1.0 + (abs(eps_star))**R
-        dum2 = (dum1)**(1.0/R)
+        dum1 = 1.0 + (abs(eps_star)) ** R
+        dum2 = (dum1) ** (1.0 / R)
         sg_star = b * eps_star + (1.0 - b) * eps_star / dum2
         self._stress = sg_star * (sg0 - sgr) + sgr
         self._Et = b + (1 - b) / (dum1 * dum2)
         self._Et *= (sg0 - sgr) / (ep0 - epr)
-
 
     def finalize(self):
         self._c_loading_index = self._loading_index
@@ -160,14 +151,7 @@ class MenegottoPinto:
         self._c_xi = self._xi
 
 
-fiber = MenegottoPinto(
-    E=29000,
-    b=0.08,  # 0.0042
-    fy=60,
-    R=15,  # 20
-    a1=8.5,
-    a2=0.0002,
-)
+fiber = MenegottoPinto(E=29000, b=0.08, fy=60, R=15, a1=8.5, a2=0.0002)  # 0.0042  # 20
 
 
 fig = plt.figure()
@@ -183,22 +167,7 @@ ax.plot(fiber._strain_0, fiber._stress_0, "-o", color="black")
 # )
 
 
-
-
-
-
-
-strains = np.array([
-    0,
-    0.001,
-    0.002,
-    0.0035,
-    0.0015,
-    0.0031,
-    0.003,
-    0.004,
-    0.005
-])
+strains = np.array([0, 0.001, 0.002, 0.0035, 0.0015, 0.0031, 0.003, 0.004, 0.005])
 f = [0, 1, 2, 6, 7, 8]
 nf = [3, 4, 5]
 stresses = []
@@ -216,8 +185,5 @@ ax.plot(strains[nf], stresses[nf], "o", color="orange")
 ax.grid()
 ax.axhline(linewidth=3, color="black")
 ax.axvline(linewidth=3, color="black")
-ax.set(
-    xlabel="STEEL STRAIN",
-    ylabel="STEEL STRESS"
-)
+ax.set(xlabel="STEEL STRAIN", ylabel="STEEL STRESS")
 plt.show()

@@ -29,4 +29,3 @@ class Material(ABC):
     @abstractclassmethod
     def finalize_load_step(self):
         pass
-

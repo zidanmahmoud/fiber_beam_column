@@ -6,7 +6,9 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.animation as ani
+
 # matplotlib.use("Qt5Agg", warn=True)
+
 
 class KentPark:
     """
@@ -46,12 +48,10 @@ class KentPark:
         self._c_strain = 0.0
         self._c_stress = 0.0
 
-
     @classmethod
     def eu(cls, K, fc, eu, e0=0.002):
         Z = 0.8 / (eu - e0)
         return cls(fc, K, Z, e0)
-
 
     def __str__(self):
         if self._K == 1:
@@ -66,7 +66,6 @@ class KentPark:
         string += f"Z\t:\t{self._Z}\n"
         return string
 
-
     @property
     def tangent_modulus(self):
         return self._Et
@@ -79,14 +78,12 @@ class KentPark:
     def strain(self):
         return self._strain
 
-
     def update_strain(self, value):
         """
         FIXME
         """
         self._strain = value
         self._set_trial_state()
-
 
     def _set_trial_state(self):
         deps = self._strain - self._c_strain
@@ -100,7 +97,6 @@ class KentPark:
         reversal = self._check_reversal()
         if reversal:
             self._reverse()
-
 
     def _check_reversal(self):
         if abs(self._strain) > 1e-15:
@@ -145,8 +141,8 @@ class KentPark:
         # loading path
         if eps <= epr:
             if eps >= ep0:
-                stress = K * fc * (2 * eps / ep0 - (eps / ep0)**2)
-                tangen = K * fc * (2 / ep0 - 2 * (eps / ep0**2))
+                stress = K * fc * (2 * eps / ep0 - (eps / ep0) ** 2)
+                tangen = K * fc * (2 / ep0 - 2 * (eps / ep0 ** 2))
             else:
                 stress = K * fc * (1 + Z * (eps - ep0))
                 if stress < 0.2 * K * fc:
@@ -161,12 +157,11 @@ class KentPark:
                 self._stress = 0.0
                 self._Et = 0.0
                 return
-            stress = - (sgr * eps - epp * sgr) / (epr - epp)
-            tangen = - sgr / (epr - epp)
+            stress = -(sgr * eps - epp * sgr) / (epr - epp)
+            tangen = -sgr / (epr - epp)
 
         self._stress = -1 * stress
         self._Et = -1 * tangen
-
 
     def finalize(self):
         self._c_loading_index = self._loading_index
@@ -187,15 +182,17 @@ fiber = KentPark(
 
 fig = plt.figure()
 ax = fig.add_subplot(111)
-strains = np.concatenate((
-    np.linspace(0, -0.0025, num=100),
-    np.linspace(-0.0025, -0.001, num=100),
-    np.linspace(-0.001, -0.003, num=100),
-    np.linspace(-0.003, 0, num=100),
-    np.linspace(0, -0.009, num=100),
-    np.linspace(-0.009, 0, num=100),
-    np.linspace(0, -0.01, num=100),
-))
+strains = np.concatenate(
+    (
+        np.linspace(0, -0.0025, num=100),
+        np.linspace(-0.0025, -0.001, num=100),
+        np.linspace(-0.001, -0.003, num=100),
+        np.linspace(-0.003, 0, num=100),
+        np.linspace(0, -0.009, num=100),
+        np.linspace(-0.009, 0, num=100),
+        np.linspace(0, -0.01, num=100),
+    )
+)
 
 stresses = list()
 for i, strain in enumerate(strains):
@@ -210,12 +207,13 @@ ax.invert_xaxis()
 ax.grid()
 ax.axhline(linewidth=3, color="black")
 ax.axvline(linewidth=3, color="black")
-ax.set(
-    xlabel="CONCRETE STRAIN",
-    ylabel="CONCRETE STRESS"
-)
+ax.set(xlabel="CONCRETE STRAIN", ylabel="CONCRETE STRESS")
+
+
 def update(frame):
     line.set_data(strains[:frame], stresses[:frame])
-    return line,
+    return (line,)
+
+
 ani = ani.FuncAnimation(fig, update, len(strains), interval=25, blit=True)
 plt.show()

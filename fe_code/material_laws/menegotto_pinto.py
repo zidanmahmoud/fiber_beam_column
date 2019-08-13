@@ -141,8 +141,8 @@ class MenegottoPinto(Material):
         R = self._R
 
         eps_star = (eps - epr) / (ep0 - epr)
-        dum1 = 1.0 + (abs(eps_star))**R
-        dum2 = (dum1)**(1.0/R)
+        dum1 = 1.0 + (abs(eps_star)) ** R
+        dum2 = (dum1) ** (1.0 / R)
         sg_star = b * eps_star + (1.0 - b) * eps_star / dum2
         self._stress = sg_star * (sg0 - sgr) + sgr
         self._Et = b + (1 - b) / (dum1 * dum2)

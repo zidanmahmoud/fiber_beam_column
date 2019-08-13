@@ -131,8 +131,8 @@ class KentPark(Material):
         # loading path
         if eps <= epr:
             if eps >= ep0:
-                stress = K * fc * (2 * eps / ep0 - (eps / ep0)**2)
-                tangen = K * fc * (2 / ep0 - 2 * (eps / ep0**2))
+                stress = K * fc * (2 * eps / ep0 - (eps / ep0) ** 2)
+                tangen = K * fc * (2 / ep0 - 2 * (eps / ep0 ** 2))
             else:
                 stress = K * fc * (1 + Z * (eps - ep0))
                 if stress < 0.2 * K * fc:
@@ -147,8 +147,8 @@ class KentPark(Material):
                 self._stress = 0.0
                 self._Et = 0.0
                 return
-            stress = - (sgr * eps - epp * sgr) / (epr - epp)
-            tangen = - sgr / (epr - epp)
+            stress = -(sgr * eps - epp * sgr) / (epr - epp)
+            tangen = -sgr / (epr - epp)
 
         self._stress = -1 * stress
         self._Et = -1 * tangen
