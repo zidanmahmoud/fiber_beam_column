@@ -1,36 +1,25 @@
 """
-Module contains only KentPark class
+test file
 """
 
-from .material import Material
+import numpy as np
+import matplotlib
+import matplotlib.pyplot as plt
+import matplotlib.animation as ani
+
+# matplotlib.use("Qt5Agg", warn=True)
 
 
-class KentPark(Material):
+class KentPark:
     """
-    Concrete uniaxial material law
+    Steel uniaxial material law
 
     Parameters
     ----------
-    fc : float
-        yield compressive strength
-    K : float
-        confinement factor
-    Z : float
-        softening slope
-    e0 : float
-        strain at maximum stress. default 0.002
-    eu : float, optional
-        ultimate strain (crushing)
-
-    Note :: can be construced either using
-    KentPark(fc, K, Z, e0) or
-    KentPark(fc, K, eu, e0)
 
     Attributes
     ----------
-    tangent_modulus : float
-    stress : float
-    strain : float
+
     """
 
     def __init__(self, fc, K, Z, e0=0.002):
@@ -52,7 +41,6 @@ class KentPark(Material):
         self._strain = 0.0
         self._stress = 0.0
 
-        # == converged variables
         self._c_loading_index = 0
         self._c_strain_p = 0.0
         self._c_strain_r = 0.0
@@ -61,44 +49,41 @@ class KentPark(Material):
         self._c_stress = 0.0
 
     @classmethod
-    def eu(cls, fc, K, eu, e0=0.002):
-        """
-        Overloading the default constructor with eu
-        instead of Z
-        """
+    def eu(cls, K, fc, eu, e0=0.002):
         Z = 0.8 / (eu - e0)
         return cls(fc, K, Z, e0)
 
+    def __str__(self):
+        if self._K == 1:
+            string = "Unconfined"
+        else:
+            string = "Confined"
+        string += " Concrete Material:\n"
+        string += "--------------------------------\n"
+        string += f"K\t:\t{self._K}\n"
+        string += f"fc\t:\t{self._fc}\n"
+        string += f"e_0\t:\t{self._strain_0}\n"
+        string += f"Z\t:\t{self._Z}\n"
+        return string
+
     @property
     def tangent_modulus(self):
-        """ current tangent modulus """
         return self._Et
 
     @property
     def stress(self):
-        """ current stress """
         return self._stress
 
     @property
     def strain(self):
-        """ current strain """
+        return self._strain
 
-    def update_strain(self, fiber_strain):
+    def update_strain(self, value):
         """
-        set new strain and test for reversal
-
-        Parameters
-        ----------
-        fiber_strain : float
-            fiber strain
-
-        Returns
-        -------
-        reversal : bool
-            flag True if reversed
+        FIXME
         """
-        self._strain = fiber_strain
-        return self._set_trial_state()
+        self._strain = value
+        self._set_trial_state()
 
     def _set_trial_state(self):
         deps = self._strain - self._c_strain
@@ -109,15 +94,11 @@ class KentPark(Material):
                 self._loading_index = 2
             else:
                 self._loading_index = 1
-        reversal = self.check_reversal()
+        reversal = self._check_reversal()
         if reversal:
-            self.reverse()
-        return reversal
+            self._reverse()
 
-    def check_reversal(self):
-        """
-        check for reversal
-        """
+    def _check_reversal(self):
         if abs(self._strain) > 1e-15:
             if self._strain < 0:
                 if self._c_loading_index in (2, 3):
@@ -125,9 +106,9 @@ class KentPark(Material):
                         return True
         return False
 
-    def reverse(self):
+    def _reverse(self):
         """
-        reverse the material parameters
+        FIXME
         """
         self._strain_r = self._c_strain
         self._stress_r = self._c_stress
@@ -140,10 +121,6 @@ class KentPark(Material):
             self._strain_p = ep0 * (0.145 * crit ** 2 + 0.13 * crit)
 
     def calculate_stress_and_tangent_modulus(self):
-        """
-        update the current stress and tangent modulus
-        based on the current strain
-        """
         eps = self._strain
         ep0 = self._strain_0
         epp = self._strain_p
@@ -186,14 +163,57 @@ class KentPark(Material):
         self._stress = -1 * stress
         self._Et = -1 * tangen
 
-    def finalize_load_step(self):
-        """
-        update the converged variables. Called when the
-        whole structure is converged at the load step
-        """
+    def finalize(self):
         self._c_loading_index = self._loading_index
         self._c_strain_p = self._strain_p
         self._c_strain_r = self._strain_r
         self._c_stress_r = self._stress_r
         self._c_strain = self._strain
         self._c_stress = self._stress
+
+
+fiber = KentPark(
+    fc=6.95,
+    K=1,
+    Z=770,
+    # eu=0.0037,
+    e0=0.0027,
+)
+
+fig = plt.figure()
+ax = fig.add_subplot(111)
+strains = np.concatenate(
+    (
+        np.linspace(0, -0.0025, num=100),
+        np.linspace(-0.0025, -0.001, num=100),
+        np.linspace(-0.001, -0.003, num=100),
+        np.linspace(-0.003, 0, num=100),
+        np.linspace(0, -0.009, num=100),
+        np.linspace(-0.009, 0, num=100),
+        np.linspace(0, -0.01, num=100),
+    )
+)
+
+stresses = list()
+for i, strain in enumerate(strains):
+    fiber.update_strain(strain)
+    fiber.calculate_stress_and_tangent_modulus()
+    fiber.finalize()
+    stresses.append(fiber.stress)
+
+line, = ax.plot(strains, stresses, "o", color="black", markerfacecolor="none", label="unconfined")
+ax.invert_yaxis()
+ax.invert_xaxis()
+ax.grid()
+ax.axhline(linewidth=3, color="black")
+ax.axvline(linewidth=3, color="black")
+ax.set(xlabel="CONCRETE STRAIN", ylabel="CONCRETE STRESS")
+
+
+def update(frame):
+    line.set_data(strains[:frame], stresses[:frame])
+    return (line,)
+
+
+ani = ani.FuncAnimation(fig, update, len(strains), interval=25, blit=True)
+plt.show()

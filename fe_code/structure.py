@@ -209,17 +209,7 @@ class Structure:
 
         # STEP 5
         for j in range(1, max_ele_iterations + 1):
-            for element in self.elements:
-                # STEP 6 & 7
-                element.calculate_forces()
-                # STEP 8-12
-                element.state_determination()
-                element.calculate_displacement_residuals()
-
-            # STEPS 13-15
-            conv = True
-            for element in self.elements:
-                conv *= element.check_convergence()
+            conv = self.element_loop()
 
             # STEP 17
             if conv:  # all elements converged
@@ -233,6 +223,18 @@ class Structure:
 
             if j == max_ele_iterations:
                 warning(f"ELEMENTS DID NOT CONVERGE WITH {max_ele_iterations} ITERATIONS")
+
+    def element_loop(self):
+        """
+        FIXME
+        """
+        conv = True
+        for element in self.elements:
+            element.calculate_forces()
+            element.state_determination()
+            element.calculate_displacement_residuals()
+            conv *= element.check_convergence()
+        return conv
 
     def check_nr_convergence(self):
         """ steps 18-20 """

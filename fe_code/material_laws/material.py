@@ -11,11 +11,15 @@ class Material(ABC):
     """
 
     @abstractclassmethod
-    def calculate_strain_from_fiber(self, fiber_chng_strain_increment):
+    def update_strain(self, fiber_strain):
         pass
 
     @abstractclassmethod
-    def reverse(self, nz):
+    def check_reversal(self):
+        pass
+
+    @abstractclassmethod
+    def reverse(self):
         pass
 
     @abstractclassmethod

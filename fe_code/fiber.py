@@ -2,7 +2,6 @@
 Module contains only the fiber class
 """
 import numpy as np
-from .material_laws import MenegottoPinto
 
 
 class Fiber:
@@ -15,10 +14,6 @@ class Fiber:
         y location
     z : float
         z location
-    ny : int
-        fiber number in y direction
-    nz : int
-        fiber number in z direction
     area : float
         section area of the fiber
     material_class : Material object
@@ -37,16 +32,12 @@ class Fiber:
         material stiffness
     """
 
-    def __init__(self, y, z, ny, nz, area, material_class):
+    def __init__(self, y, z, area, material_class):
         self.direction = np.array([-y, z, 1.0])
         self.direction_matrix = np.outer(self.direction, self.direction)
-        # TODO: get rid of ny, nz
-        self._ny = ny
-        self._nz = nz
         self.area = area
         self._material = material_class
 
-        self._reverse = True  # i=1
         self._chng_strain_increment = 0.0
         self._strain_increment = 0.0
         self.converged_strain = 0.0
@@ -60,21 +51,11 @@ class Fiber:
         """
         return self._material.tangent_modulus
 
-    def initialize(self):
-        """
-        TODO: get rid of this
-        """
-        self._material.determin_direction(self._nz)
-
     def calculate_strain_increment_from_section(self, sec_chng_def_increment):
         """ step 10 + 11 """
         self._chng_strain_increment = self.direction @ sec_chng_def_increment
         self._strain_increment += self._chng_strain_increment
-
-        self._material.calculate_strain_from_fiber(self._chng_strain_increment)
-        if self._reverse:  # FIXME: this should be a check reversal
-            self._material.reverse(self._nz)
-        self._reverse = False
+        self._material.update_strain(self.converged_strain + self._strain_increment)
         self._material.calculate_stress_and_tangent_modulus()
 
     def increment_strain(self):
@@ -92,9 +73,3 @@ class Fiber:
         self._material.finalize_load_step()
         self.converged_strain = self.strain
         self._strain_increment = 0.0
-
-    def reverse_loading(self):
-        """
-        to reverse material stuff ONLY in the next first iteration
-        """
-        self._reverse = True
