@@ -22,7 +22,8 @@ class Section:
         norm of the unbalance forces
     """
 
-    def __init__(self):
+    def __init__(self, section_id):
+        self._id = section_id
         self._fibers = dict()
         self._tolerance = 1e-7
 
@@ -40,6 +41,10 @@ class Section:
         self._unbalance_forces = np.zeros(3)
         self.residual = np.zeros(3)
         self._b_matrix = None
+
+    @property
+    def id(self):
+        return self._id
 
     @property
     def tolerance(self):
@@ -62,7 +67,7 @@ class Section:
             self._b_matrix = _calculate_b_matrix(self.position)
         return self._b_matrix
 
-    def add_fiber(self, fiber_id, y, z, area, material_class):
+    def add_fiber(self, fiber_id, y, z, area, material_class, w, h):
         """add a fiber to the section
 
         Parameters
@@ -80,7 +85,7 @@ class Section:
         """
         if not isinstance(material_class, Material):
             raise ValueError("mateial_class is not of type : Material")
-        self._fibers[fiber_id] = Fiber(y, z, area, material_class)
+        self._fibers[fiber_id] = Fiber(fiber_id, y, z, area, material_class, w, h)
 
     def initialize(self):
         """initialize stiffness matrix"""
@@ -111,10 +116,13 @@ class Section:
 
     def calculate_fiber_deformation_increment(self):
         """ step 10 """
+        rev = 0
         for fiber in self.fibers:
-            fiber.calculate_strain_increment_from_section(self._chng_def_increment)
+            reversal = fiber.calculate_strain_increment_from_section(self._chng_def_increment)
+            rev += reversal
             fiber.increment_strain()
             fiber.calculate_stress()
+        return rev
 
     def check_convergence(self):
         """ steps 13-15 """

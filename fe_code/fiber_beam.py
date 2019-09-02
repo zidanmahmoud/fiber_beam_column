@@ -30,7 +30,8 @@ class FiberBeam:
     displacement_residual : ndarray
     """
 
-    def __init__(self, node1, node2):
+    def __init__(self, element_id, node1, node2):
+        self._id = element_id
         self._nodes = [node1, node2]
         self._sections = dict()
 
@@ -47,6 +48,10 @@ class FiberBeam:
 
         dof_types = "uvwxyz"
         self.dofs = [DoF(node.id, dof_type) for node in self._nodes for dof_type in dof_types]
+
+    @property
+    def id(self):
+        return self._id
 
     @property
     def nodes(self):
@@ -68,7 +73,10 @@ class FiberBeam:
         """
         if section_id in self._sections:
             raise RuntimeError(f"Structure has already a section with id {section_id}")
-        self._sections[section_id] = Section()
+        self._sections[section_id] = Section(section_id)
+
+    def get_section(self, section_id):
+        return self._sections[section_id]
 
     def initialize(self):
         """
@@ -159,14 +167,32 @@ class FiberBeam:
 
     def state_determination(self):
         """ steps 8-12 """
+        rev = 0
+        count_fibers = 0
         for section in self.sections:
+            count_fibers += len(section.fibers)
             section.calculate_force_increment_from_element(self._chng_force_increment)
             section.increment_section_forces()
             section.calculate_deformation_increment()
-            section.calculate_fiber_deformation_increment()
+            reversal = section.calculate_fiber_deformation_increment()
+            rev += reversal
+            # if reversal == len(section.fibers):
+            #     rev += rev2
+            #     for fiber in section.fibers:
+            #         fiber.reverse_material()
             section.update_stiffness_matrix()
+        # if rev / count_fibers >= 1:  # all the fibers in the element should be reversed
+        #     self._reverse_all_fibers()
+        # else:
+        #     rev = 0
 
         self.update_local_stiffness_matrix()
+        return rev
+
+    def _reverse_all_fibers(self):
+        for section in self.sections:
+            for fiber in section.fibers:
+                fiber.reverse_material()
 
     def check_convergence(self):
         """
@@ -203,8 +229,8 @@ class FiberBeam:
         """
         finalize for next load step
         """
-        self._displacement_increment = np.zeros(5)
-        self._force_increment = np.zeros(5)
+        self._displacement_increment.fill(0)
+        self._force_increment.fill(0)
         for section in self.sections:
             section.finalize_load_step()
         self.converged_resisting_forces = self.resisting_forces

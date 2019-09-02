@@ -118,7 +118,9 @@ class Structure:
 
     def add_fiber_beam_element(self, element_id, node1_id, node2_id):
         """ add an element """
-        self._elements[element_id] = FiberBeam(self.get_node(node1_id), self.get_node(node2_id))
+        node1 = self.get_node(node1_id)
+        node2 = self.get_node(node2_id)
+        self._elements[element_id] = FiberBeam(element_id, node1, node2)
 
     def add_dirichlet_condition(self, node_id, dof_types, value):
         """ add a dirichlet boundary condition """
@@ -209,7 +211,9 @@ class Structure:
 
         # STEP 5
         for j in range(1, max_ele_iterations + 1):
-            conv = self.element_loop()
+            conv, rev = self.element_loop()
+            if rev > 0:
+                print(f" --- reversing {rev} fibers --- ")
 
             # STEP 17
             if conv:  # all elements converged
@@ -229,12 +233,13 @@ class Structure:
         FIXME
         """
         conv = True
+        rev = 0
         for element in self.elements:
             element.calculate_forces()
-            element.state_determination()
+            rev += element.state_determination()
             element.calculate_displacement_residuals()
             conv *= element.check_convergence()
-        return conv
+        return conv, rev
 
     def check_nr_convergence(self):
         """ steps 18-20 """
@@ -264,12 +269,3 @@ class Structure:
             node.u, node.v, node.w = self.converged_displacement[indices]
         for element in self.elements:
             element.finalize_load_step()
-
-    def reverse_all_fibers(self):
-        """
-        reverse the fibers for an opposite direction loading
-        """
-        for element in self.elements:
-            for section in element.sections:
-                for fiber in section.fibers:
-                    fiber.reverse_loading()

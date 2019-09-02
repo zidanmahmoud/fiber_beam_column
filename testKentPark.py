@@ -22,12 +22,16 @@ class KentPark:
 
     """
 
-    def __init__(self, fc, K, Z, e0=0.002):
-        self._fc = fc
+    def __init__(self, fc, confined, Z, e0=0.002):
+        K = 1
+        e0 = abs(e0)
+        self._fc = abs(fc)
         self._K = K
-        self._strain_0 = -e0 * K
-        self._Z = Z
-        self._Et = 2 * fc / self._strain_0
+        self._confined = confined
+        self._strain_0 = -abs(e0 * K)
+        self._Z = abs(Z)
+        self._strain_u = -(0.8 / abs(Z) + e0)
+        self._Et = 2 * abs(fc) / self._strain_0
 
         # Loading index:
         #   0 => initial state
@@ -50,7 +54,7 @@ class KentPark:
 
     @classmethod
     def eu(cls, K, fc, eu, e0=0.002):
-        Z = 0.8 / (eu - e0)
+        Z = 0.8 / (abs(eu) - abs(e0))
         return cls(fc, K, Z, e0)
 
     def __str__(self):
@@ -99,17 +103,26 @@ class KentPark:
             self._reverse()
 
     def _check_reversal(self):
+        # if abs(self._strain) > 1e-15:
+        #     if self._strain < 0:
+        #         if self._c_loading_index in (2, 3):
+        #             if self._loading_index == 1:
+        #                 return True
         if abs(self._strain) > 1e-15:
-            if self._strain < 0:
-                if self._c_loading_index in (2, 3):
-                    if self._loading_index == 1:
-                        return True
+            if self._c_loading_index in (2, 3):
+                if self._loading_index == 1:
+                    return True
+            if self._c_loading_index in (1, 3):
+                if self._loading_index == 2:
+                    return True
         return False
 
     def _reverse(self):
         """
         FIXME
         """
+        if self._loading_index == 2:  # unloading path DO NOT REVERSE
+            return
         self._strain_r = self._c_strain
         self._stress_r = self._c_stress
 
@@ -125,6 +138,7 @@ class KentPark:
         ep0 = self._strain_0
         epp = self._strain_p
         epr = self._strain_r
+        epu = self._strain_u
         sgr = self._stress_r
         K = self._K
         Z = self._Z
@@ -143,13 +157,23 @@ class KentPark:
             if eps >= ep0:
                 stress = K * fc * (2 * eps / ep0 - (eps / ep0) ** 2)
                 tangen = K * fc * (2 / ep0 - 2 * (eps / ep0 ** 2))
-            else:
+            # else:
+            #     stress = K * fc * (1 + Z * (eps - ep0))
+            #     if stress < 0.2 * K * fc:
+            #         stress = 0.2 * K * fc
+            #         tangen = 0
+            #     else:
+            #         tangen = K * fc * Z
+            elif eps > epu:
                 stress = K * fc * (1 + Z * (eps - ep0))
-                if stress < 0.2 * K * fc:
+                tangen = K * fc * Z
+            else:
+                if self._confined:
                     stress = 0.2 * K * fc
                     tangen = 0
                 else:
-                    tangen = K * fc * Z
+                    stress = 0
+                    tangen = 0
 
         # unloading path
         else:
@@ -174,7 +198,14 @@ class KentPark:
 
 fiber = KentPark(
     fc=6.95,
-    K=1,
+    confined=1,
+    Z=770,
+    # eu=0.0037,
+    e0=0.0027,
+)
+fiber2 = KentPark(
+    fc=6.95,
+    confined=0,
     Z=770,
     # eu=0.0037,
     e0=0.0027,
@@ -184,24 +215,30 @@ fig = plt.figure()
 ax = fig.add_subplot(111)
 strains = np.concatenate(
     (
-        np.linspace(0, -0.0025, num=100),
-        np.linspace(-0.0025, -0.001, num=100),
-        np.linspace(-0.001, -0.003, num=100),
-        np.linspace(-0.003, 0, num=100),
-        np.linspace(0, -0.009, num=100),
-        np.linspace(-0.009, 0, num=100),
+        # np.linspace(0, -0.0025, num=100),
+        # np.linspace(-0.0024, -0.001, num=100),
+        # np.linspace(-0.0011, -0.003, num=100),
+        # np.linspace(-0.0031, 0, num=100),
+        # np.linspace(0, -0.009, num=100),
+        # np.linspace(-0.009, 0, num=100),
         np.linspace(0, -0.01, num=100),
     )
 )
 
 stresses = list()
+stresses2 = list()
 for i, strain in enumerate(strains):
     fiber.update_strain(strain)
     fiber.calculate_stress_and_tangent_modulus()
     fiber.finalize()
     stresses.append(fiber.stress)
+    fiber2.update_strain(strain)
+    fiber2.calculate_stress_and_tangent_modulus()
+    fiber2.finalize()
+    stresses2.append(fiber2.stress)
 
-line, = ax.plot(strains, stresses, "o", color="black", markerfacecolor="none", label="unconfined")
+line, = ax.plot(strains, stresses, "o-", color="black", mfc="none", label="unconfined")
+line2, = ax.plot(strains, stresses2, "*-", color="blue", mfc="none", label="unconfined")
 ax.invert_yaxis()
 ax.invert_xaxis()
 ax.grid()
@@ -212,7 +249,8 @@ ax.set(xlabel="CONCRETE STRAIN", ylabel="CONCRETE STRESS")
 
 def update(frame):
     line.set_data(strains[:frame], stresses[:frame])
-    return (line,)
+    line2.set_data(strains[:frame], stresses2[:frame])
+    return (line,line2)
 
 
 ani = ani.FuncAnimation(fig, update, len(strains), interval=25, blit=True)

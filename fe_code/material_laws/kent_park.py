@@ -110,25 +110,32 @@ class KentPark(Material):
             else:
                 self._loading_index = 1
         reversal = self.check_reversal()
-        if reversal:
-            self.reverse()
         return reversal
 
     def check_reversal(self):
         """
         check for reversal
         """
+        # if abs(self._strain) > 1e-15:
+        #     if self._strain < 0:
+        #         if self._c_loading_index in (2, 3):
+        #             if self._loading_index == 1:
+        #                 return True
         if abs(self._strain) > 1e-15:
-            if self._strain < 0:
-                if self._c_loading_index in (2, 3):
-                    if self._loading_index == 1:
-                        return True
+            if self._c_loading_index in (2, 3):
+                if self._loading_index == 1:
+                    return True
+            if self._c_loading_index in (1, 3):
+                if self._loading_index == 2:
+                    return True
         return False
 
     def reverse(self):
         """
         reverse the material parameters
         """
+        if self._loading_index == 2:  # unloading path DO NOT REVERSE
+            return
         self._strain_r = self._c_strain
         self._stress_r = self._c_stress
 

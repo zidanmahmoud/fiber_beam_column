@@ -118,8 +118,6 @@ class MenegottoPinto(Material):
                     self._strain_0 = self._fy / self._E
                     self._stress_0 = self._fy
         reversal = self.check_reversal()
-        if reversal:
-            self.reverse()
         return reversal
 
     def check_reversal(self):
@@ -152,7 +150,7 @@ class MenegottoPinto(Material):
         else:
             sgy = -self._fy
         lepr = self._last_strain_r
-        self._strain_0 = (E * epr - sgr + sgy * (1 - b)) / (E * (1 - b))
+        self._strain_0 = (E * epr - sgr + sgy * (1 - b)) / (E * (1 - b))  # FIXME: if eps0 == epsr: eps_star = inf
         self._stress_0 = b * E * self._strain_0 + sgy * (1 - b)
         eps_intersect = ((sgr - lepr) + E * b * lepr - E * epr) / (E * (b - 1))
         self._xi = abs(eps_intersect - lepr)
