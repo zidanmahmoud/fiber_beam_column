@@ -24,7 +24,7 @@ class KentPark(Material):
 
     Note :: can be construced either using
     KentPark(fc, K, Z, e0) or
-    KentPark(fc, K, eu, e0)
+    KentPark.eu(fc, K, eu, e0)
 
     Attributes
     ----------
@@ -110,6 +110,9 @@ class KentPark(Material):
             else:
                 self._loading_index = 1
         reversal = self.check_reversal()
+        if reversal:
+            self.reverse()
+        self.calculate_stress_and_tangent_modulus()
         return reversal
 
     def check_reversal(self):

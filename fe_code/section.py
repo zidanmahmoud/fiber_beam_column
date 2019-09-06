@@ -83,8 +83,8 @@ class Section:
         material_class : object of type Material
             material model
         """
-        if not isinstance(material_class, Material):
-            raise ValueError("mateial_class is not of type : Material")
+        # if not isinstance(material_class, Material):
+        #     raise ValueError("material_class is not of type : Material")
         self._fibers[fiber_id] = Fiber(fiber_id, y, z, area, material_class, w, h)
 
     def initialize(self):

@@ -250,7 +250,7 @@ ax.set(xlabel="CONCRETE STRAIN", ylabel="CONCRETE STRESS")
 def update(frame):
     line.set_data(strains[:frame], stresses[:frame])
     line2.set_data(strains[:frame], stresses2[:frame])
-    return (line,line2)
+    return (line, line2)
 
 
 ani = ani.FuncAnimation(fig, update, len(strains), interval=25, blit=True)

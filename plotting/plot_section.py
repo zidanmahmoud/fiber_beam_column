@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from math import sqrt
 
-from fe_code import KentPark
+from fe_code import KentPark, KentParkMod
 
 
 def plot_disctrized_2d(beam):
@@ -13,7 +13,7 @@ def plot_disctrized_2d(beam):
         y = -fiber.direction[0]
         z = fiber.direction[1]
         side = sqrt(fiber.area)
-        if isinstance(fiber._material, KentPark):
+        if isinstance(fiber._material, KentPark) or isinstance(fiber._material, KentParkMod):
             fcolor = "grey"
         else:
             fcolor = "black"

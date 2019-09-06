@@ -158,18 +158,15 @@ fig = plt.figure()
 ax = fig.add_subplot(111)
 ax.plot(fiber._strain_0, fiber._stress_0, "-o", color="black")
 
-# strains = np.concatenate(
-#     (
-#         np.linspace(0.000, 0.005),
-#         np.linspace(0.005, -0.01),
-#         np.linspace(-0.01, -0.0005),
-#     )
-# )
+strains = np.concatenate(
+    (np.linspace(0.000, 0.005), np.linspace(0.0049, -0.01), np.linspace(-0.009, -0.0005))
+)
+f = np.linspace(0, strains.size - 1, strains.size, dtype=int)
+nf = []
 
-
-strains = np.array([0, 0.001, 0.002, 0.0035, 0.0015, 0.0031, 0.003, 0.004, 0.005])
-f = [0, 1, 2, 6, 7, 8]
-nf = [3, 4, 5]
+# strains = np.array([0, 0.001, 0.002, 0.0035, 0.0015, 0.0031, 0.003, 0.004, 0.005])
+# f = [0, 1, 2, 6, 7, 8]
+# nf = [3, 4, 5]
 stresses = []
 for i, strain in enumerate(strains):
     reversal = fiber.update_strain(strain)

@@ -212,8 +212,8 @@ class Structure:
         # STEP 5
         for j in range(1, max_ele_iterations + 1):
             conv, rev = self.element_loop()
-            if rev > 0:
-                print(f" --- reversing {rev} fibers --- ")
+            # if rev > 0:
+            #     print(f" --- reversing {rev} fibers --- ")
 
             # STEP 17
             if conv:  # all elements converged

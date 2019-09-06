@@ -7,12 +7,6 @@ from plotting import plot_disctrized_2d, initiate_plot, update_plot
 from models.column import model1, model2, model3
 from disp_calc import calculate_loadsteps
 
-STEP = 0.4
-STEPS = calculate_loadsteps(STEP)
-
-PLOT_FLAG = True
-SAVE_PLOT = True
-
 
 def add_solution_parameters(structure):
     """ add tolerance values and boundary conditions """
@@ -53,7 +47,7 @@ def advance_in_load(structure, load_step):
         structure.controled_dof_increment = STEP
 
 
-def solution_loop(structure):
+def solution_loop(structure, *plot_args, **plot_kwargs):
     max_nr_iterations = 100
     max_ele_iterations = 100
 
@@ -65,7 +59,7 @@ def solution_loop(structure):
     print("\n:: Starting solution loop ::")
 
     if PLOT_FLAG:
-        fig, axes, line = initiate_plot()
+        fig, axes, line = initiate_plot(*plot_args, **plot_kwargs)
 
     for k in range(1, STEPS[-1]):
         print(f"\nLOAD STEP : {k}")
@@ -81,10 +75,10 @@ def solution_loop(structure):
                 io.warning(f"Newton-Raphson did not converge {max_nr_iterations} iterations")
 
         structure.finalize_load_step()
+        load.append(100 * structure.converged_load_factor)
+        disp.append(1 / 10000 * 3 * structure.converged_controled_dof)
 
         if PLOT_FLAG:
-            load.append(100 * structure.converged_load_factor)
-            disp.append(1 / 10000 * 3 * structure.converged_controled_dof)
             update_plot(axes, line, disp, load)
 
     print("\n:: Finished solution loop ::")
@@ -93,9 +87,16 @@ def solution_loop(structure):
     if PLOT_FLAG and SAVE_PLOT:
         fig.savefig("moment_curvature.png")
 
+    return disp, load
+
 
 if __name__ == "__main__":
-    stru = model3()
+    PLOT_FLAG = False
+    SAVE_PLOT = False
+    STEP = 0.4
+    STEPS = calculate_loadsteps(STEP)
+
+    stru = model1()
     plot_disctrized_2d(stru.get_element(1))
     add_solution_parameters(stru)
-    solution_loop(stru)
+    solution_loop(stru, "-o", color="blue", mfc="none")

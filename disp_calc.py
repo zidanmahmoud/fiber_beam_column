@@ -14,5 +14,5 @@ def calculate_loadsteps(step_size):
     l.append(d(0.00185 + 0.0016) / step_size + l[-1])
     l.append(d(0.0016 + 0.000175) / step_size + l[-1])
     l.append(d(0.000175 + 0.0011) / step_size + l[-1])
-    l.append(d(0.0011 - 0.0005) / step_size + l[-1])
+    l.append(d(0.0011 - 0.0006) / step_size + l[-1])
     return [round(number) for number in l]
