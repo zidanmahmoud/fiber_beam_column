@@ -2,10 +2,10 @@
 Module contains only MenegottoPinto class
 """
 
-from .material import Material
+from .material import UniaxialIncrementalMaterial
 
 
-class MenegottoPinto(Material):
+class MenegottoPinto(UniaxialIncrementalMaterial):
     """
     Steel uniaxial material law
 
@@ -17,7 +17,7 @@ class MenegottoPinto(Material):
         hardening ratio
     fy : float
         yield strength
-    R : float
+    R0 : float
         initial transition variable
     a1 : float
         imperical parameter
@@ -32,15 +32,14 @@ class MenegottoPinto(Material):
     strain : float
     """
 
-    def __init__(self, E, b, fy, R, a1, a2):
+    def __init__(self, E, b, fy, R0, a1, a2):
         self._E = E
-        self._Et = E
         self._b = b
-        self._R0 = R
-        self._R = R
+        self._R0 = R0
         self._fy = fy
         self._a1 = a1
         self._a2 = a2
+        self._stress_initial = 0.0
 
         # Loading index:
         #   0 => initial state
@@ -48,26 +47,29 @@ class MenegottoPinto(Material):
         #   2 => decreasing strain
         #   3 => strain not changing
         self._loading_index = 0
-        self._strain_0 = fy / E
-        self._stress_0 = fy
+        self._Et = E
+        self._strain_0 = 0.0
+        self._stress_0 = 0.0
         self._strain_r = 0.0
         self._stress_r = 0.0
-        self._last_strain_r = 0.0
-        self._last_stress_r = 0.0
+        self._strain_plastic = 0.0
+        self._strain_max = fy / E
+        self._strain_min = -self._strain_max
         self._strain = 0.0
         self._stress = 0.0
-        self._xi = 0.0
 
         # Converged Variables
         self._c_loading_index = 0
         self._c_Et = E
-        self._c_strain_0 = self._strain_0
-        self._c_stress_0 = self._stress_0
+        self._c_strain_0 = 0.0
+        self._c_stress_0 = 0.0
         self._c_strain_r = 0.0
         self._c_stress_r = 0.0
+        self._c_strain_plastic = 0.0
+        self._c_strain_max = fy / E
+        self._c_strain_min = -self._c_strain_max
         self._c_strain = 0.0
         self._c_stress = 0.0
-        self._c_xi = 0.0
 
     @property
     def tangent_modulus(self):
@@ -84,6 +86,11 @@ class MenegottoPinto(Material):
         """ current strain """
         return self._strain
 
+    def prestress(self, value):
+        self._stress_initial = value
+        self._c_strain = value / self._E
+        self._c_stress = value
+
     def update_strain(self, fiber_strain):
         """
         set new strain and test for reversal
@@ -98,89 +105,95 @@ class MenegottoPinto(Material):
         reversal : bool
             flag True if reversed
         """
-        self._strain = fiber_strain
-        return self._set_trial_state()
-
-    def _set_trial_state(self):
-        deps = self._strain - self._c_strain
-        if self._loading_index == 0 or self._loading_index == 3:
-            if abs(deps) < 1e-15:  # nearly zero
-                self._Et = self._E
-                self._stress = 0
-                self._loading_index = 3
-            else:
-                if deps < 0:
-                    self._loading_index = 2
-                    self._strain_0 = -self._fy / self._E
-                    self._stress_0 = -self._fy
-                else:
-                    self._loading_index = 1
-                    self._strain_0 = self._fy / self._E
-                    self._stress_0 = self._fy
-        reversal = self.check_reversal()
-        if reversal:
-            self.reverse()
-        self.calculate_stress_and_tangent_modulus()
+        reversal = self._set_trial_state(fiber_strain)
         return reversal
 
-    def check_reversal(self):
-        """
-        check for reversal
-        """
-        deps = self._strain - self._c_strain
-        if self._loading_index == 2 and deps > 0:
-            self._loading_index = 1
-            return True
-        if self._loading_index == 1 and deps < 0:
-            self._loading_index = 2
-            return True
-        return False
-
-    def reverse(self):
-        """
-        reverse the material parameters
-        """
-        self._last_strain_r = self._strain_r
-        self._last_stress_r = self._stress_r
-        self._strain_r = self._c_strain
-        self._stress_r = self._c_stress
+    def _set_trial_state(self, new_strain):
+        fy = self._fy
         E = self._E
         b = self._b
-        epr = self._strain_r
-        sgr = self._stress_r
-        if self._loading_index == 1:
-            sgy = self._fy
+        E_inf = b * E
+        strain_y = fy / E
+
+        if self._stress_initial != 0:
+            self._strain = (self._stress_initial / E) + new_strain
         else:
-            sgy = -self._fy
-        lepr = self._last_strain_r
-        self._strain_0 = (E * epr - sgr + sgy * (1 - b)) / (
-            E * (1 - b)
-        )  # FIXME: if eps0 == epsr: eps_star = inf
-        self._stress_0 = b * E * self._strain_0 + sgy * (1 - b)
-        eps_intersect = ((sgr - lepr) + E * b * lepr - E * epr) / (E * (b - 1))
-        self._xi = abs(eps_intersect - lepr)
-        self._R = self._R0 - self._a1 * self._xi / (self._a2 + self._xi)
+            self._strain = new_strain
 
-    def calculate_stress_and_tangent_modulus(self):
-        """
-        update the current stress and tangent modulus
-        based on the current strain
-        """
-        b = self._b
-        eps = self._strain
-        epr = self._strain_r
-        ep0 = self._strain_0
-        sgr = self._stress_r
-        sg0 = self._stress_0
-        R = self._R
+        deps = self._strain - self._c_strain
 
-        eps_star = (eps - epr) / (ep0 - epr)
+        self._strain_max = self._c_strain_max
+        self._strain_min = self._c_strain_min
+        self._strain_plastic = self._c_strain_plastic
+        self._strain_0 = self._c_strain_0
+        self._stress_0 = self._c_stress_0
+        self._strain_r = self._c_strain_r
+        self._stress_r = self._c_stress_r
+        self._loading_index = self._c_loading_index
+
+        if self._loading_index == 0 or self._loading_index == 3:
+
+            if abs(deps) < 1e-15:  # nearly zero
+                self._Et = E
+                self._stress = 0.0
+                self._loading_index = 3
+                return False
+
+            else:
+                self._strain_max = strain_y
+                self._strain_min = -strain_y
+
+                if deps < 0:
+                    self._loading_index = 2
+                    self._strain_0 = self._strain_min
+                    self._stress_0 = -fy
+                    self._strain_plastic = self._strain_min
+
+                else:
+                    self._loading_index = 1
+                    self._strain_0 = self._strain_max
+                    self._stress_0 = fy
+                    self._strain_plastic = self._strain_max
+
+        reversal = False
+
+        if self._loading_index == 2 and deps > 0:
+            reversal = True
+            self._loading_index = 1
+            self._strain_r = self._c_strain
+            self._stress_r = self._c_stress
+            if self._c_strain < self._strain_min:
+                self._strain_min = self._c_strain
+            self._strain_0 = (fy - E_inf * strain_y - self._stress_r + E * self._strain_r) / (
+                E - E_inf
+            )
+            self._stress_0 = fy + E_inf * (self._strain_0 - strain_y)
+            self._strain_plastic = self._strain_max
+
+        elif self._loading_index == 1 and deps < 0:
+            reversal = True
+            self._loading_index = 2
+            self._strain_r = self._c_strain
+            self._stress_r = self._c_stress
+            if self._c_strain > self._strain_max:
+                self._strain_max = self._c_strain
+            self._strain_0 = (-fy + E_inf * strain_y - self._stress_r + E * self._strain_r) / (
+                E - E_inf
+            )
+            self._stress_0 = -fy + E_inf * (self._strain_0 + strain_y)
+            self._strain_plastic = self._strain_min
+
+        xi = abs((self._strain_plastic - self._strain_0) / strain_y)
+        R = self._R0 - self._a1 * xi / (self._a2 + xi)
+        eps_star = (self._strain - self._strain_r) / (self._strain_0 - self._strain_r)
         dum1 = 1.0 + (abs(eps_star)) ** R
         dum2 = (dum1) ** (1.0 / R)
         sg_star = b * eps_star + (1.0 - b) * eps_star / dum2
-        self._stress = sg_star * (sg0 - sgr) + sgr
-        self._Et = b + (1 - b) / (dum1 * dum2)
-        self._Et *= (sg0 - sgr) / (ep0 - epr)
+        self._stress = sg_star * (self._stress_0 - self._stress_r) + self._stress_r
+        self._Et = b + (1.0 - b) / (dum1 * dum2)
+        self._Et *= (self._stress_0 - self._stress_r) / (self._strain_0 - self._strain_r)
+
+        return reversal
 
     def finalize_load_step(self):
         """
@@ -193,6 +206,8 @@ class MenegottoPinto(Material):
         self._c_stress_0 = self._stress_0
         self._c_strain_r = self._strain_r
         self._c_stress_r = self._stress_r
+        self._c_strain_plastic = self._strain_plastic
+        self._c_strain_max = self._strain_max
+        self._c_strain_min = self._strain_min
         self._c_strain = self._strain
         self._c_stress = self._stress
-        self._c_xi = self._xi

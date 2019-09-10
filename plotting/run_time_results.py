@@ -9,8 +9,6 @@ def initiate_plot(*args, **kwargs):
     axes.set(title="Moment-Curvature Plot", xlabel="Curvature [rad/in]", ylabel="Moment [kip*in]")
     axes.plot(0, 0, "yo")
     line, = axes.plot(0, 0, *args, **kwargs)
-    # axes.set_autoscalex_on(True)
-    # axes.set_autoscaley_on(True)
     # axes.set(
     #     xlim=[-0.002, 0.002],
     #     ylim=[-160, 160],
@@ -29,6 +27,10 @@ def update_plot(axes, line, x, y):
     axes.autoscale_view()
     axes.get_figure().canvas.draw()
     plt.pause(1e-20)
+
+
+def keep_plot():
+    plt.show()
 
 
 def initiate_plot_3d(structure):

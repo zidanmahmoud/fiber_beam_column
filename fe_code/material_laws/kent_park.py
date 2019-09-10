@@ -1,13 +1,13 @@
 """
-Module contains only KentPark class
+Module contains only KentParkMod class
 """
 
-from .material import Material
+from .material import UniaxialIncrementalMaterial
 
 
-class KentPark(Material):
+class KentPark(UniaxialIncrementalMaterial):
     """
-    Concrete uniaxial material law
+    Modified Concrete uniaxial material law
 
     Parameters
     ----------
@@ -34,31 +34,33 @@ class KentPark(Material):
     """
 
     def __init__(self, fc, K, Z, e0=0.002):
-        self._fc = fc
+        K = 1
         self._K = K
-        self._strain_0 = -e0 * K
-        self._Z = Z
-        self._Et = 2 * fc / self._strain_0
 
-        # Loading index:
-        #   0 => initial state
-        #   1 => increasing strain
-        #   2 => decreasing strain
-        #   3 => strain not changing
-        self._loading_index = 0
-        self._strain_p = 0.0
-        self._strain_r = 0.0
-        self._stress_r = 0.0
+        self._fc = fc
+        self._strain_0 = K * e0
+        self._Z = abs(Z)
+        self._strain_u = -(0.8 / abs(Z) + abs(e0))
+
+        if self._fc > 0:
+            self._fc = -self._fc
+        if self._strain_0 > 0:
+            self._strain_0 = -self._strain_0
+
+        Et0 = 2 * self._fc / self._strain_0
         self._strain = 0.0
         self._stress = 0.0
+        self._strain_min = 0.0
+        self._strain_end = 0.0
+        self._unload_slope = Et0
+        self._Et = Et0
 
-        # == converged variables
-        self._c_loading_index = 0
-        self._c_strain_p = 0.0
-        self._c_strain_r = 0.0
-        self._c_stress_r = 0.0
         self._c_strain = 0.0
         self._c_stress = 0.0
+        self._c_strain_min = 0.0
+        self._c_strain_end = 0.0
+        self._c_unload_slope = Et0
+        self._c_Et = Et0
 
     @classmethod
     def eu(cls, fc, K, eu, e0=0.002):
@@ -82,6 +84,7 @@ class KentPark(Material):
     @property
     def strain(self):
         """ current strain """
+        return self._strain
 
     def update_strain(self, fiber_strain):
         """
@@ -97,113 +100,110 @@ class KentPark(Material):
         reversal : bool
             flag True if reversed
         """
-        self._strain = fiber_strain
-        return self._set_trial_state()
-
-    def _set_trial_state(self):
-        deps = self._strain - self._c_strain
-        if abs(deps) < 1e-15:  # nearly zero
-            self._loading_index = 3
-        else:
-            if deps < 0:
-                self._loading_index = 2
-            else:
-                self._loading_index = 1
-        reversal = self.check_reversal()
-        if reversal:
-            self.reverse()
-        self.calculate_stress_and_tangent_modulus()
+        reversal = self._set_trial_state(fiber_strain)
         return reversal
 
-    def check_reversal(self):
-        """
-        check for reversal
-        """
-        # if abs(self._strain) > 1e-15:
-        #     if self._strain < 0:
-        #         if self._c_loading_index in (2, 3):
-        #             if self._loading_index == 1:
-        #                 return True
-        if abs(self._strain) > 1e-15:
-            if self._c_loading_index in (2, 3):
-                if self._loading_index == 1:
-                    return True
-            if self._c_loading_index in (1, 3):
-                if self._loading_index == 2:
-                    return True
-        return False
+    def _set_trial_state(self, new_strain):
+        reversal = False
+        self._strain_min = self._c_strain_min
+        self._strain_end = self._c_strain_end
+        self._unload_slope = self._c_unload_slope
+        self._stress = self._c_stress
+        self._Et = self._c_Et
+        self._strain = self._c_strain
 
-    def reverse(self):
-        """
-        reverse the material parameters
-        """
-        if self._loading_index == 2:  # unloading path DO NOT REVERSE
-            return
-        self._strain_r = self._c_strain
-        self._stress_r = self._c_stress
+        deps = new_strain - self._c_strain
+        if abs(deps) < 1e-15:
+            return reversal
 
-        crit = self._strain_r / self._strain_0
-        ep0 = self._strain_0
-        if crit >= 2:
-            self._strain_p = ep0 * (0.707 * (crit - 2) + 0.834)
-        elif crit < 2:
-            self._strain_p = ep0 * (0.145 * crit ** 2 + 0.13 * crit)
-
-    def calculate_stress_and_tangent_modulus(self):
-        """
-        update the current stress and tangent modulus
-        based on the current strain
-        """
-        eps = self._strain
-        ep0 = self._strain_0
-        epp = self._strain_p
-        epr = self._strain_r
-        sgr = self._stress_r
-        K = self._K
-        Z = self._Z
-        fc = self._fc
-
-        # == inequality signs are reversed compared to theory becuase of the negative signs
-
-        # positive strain
-        if eps >= 0:
+        self._strain = new_strain
+        if self._strain > 0.0:
             self._stress = 0.0
             self._Et = 0.0
-            return
+            return reversal
 
-        # loading path
-        if eps <= epr:
-            if eps >= ep0:
-                stress = K * fc * (2 * eps / ep0 - (eps / ep0) ** 2)
-                tangen = K * fc * (2 / ep0 - 2 * (eps / ep0 ** 2))
-            else:
-                stress = K * fc * (1 + Z * (eps - ep0))
-                if stress < 0.2 * K * fc:
-                    stress = 0.2 * K * fc
-                    tangen = 0
-                else:
-                    tangen = K * fc * Z
+        self._unload_slope = self._c_unload_slope
 
-        # unloading path
+        stress_temp = (
+            self._c_stress + self._unload_slope * self._strain - self._unload_slope * self._c_strain
+        )
+        # further into compression
+        if self._strain < self._c_strain:
+            self._strain_min = self._c_strain_min
+            self._strain_end = self._c_strain_end
+            self._reload()
+            if stress_temp > self._stress:
+                self._stress = stress_temp
+                self._Et = self._unload_slope
+        # towards tension
+        elif stress_temp <= 0.0:
+            if self._c_strain == self._strain_min:
+                reversal = True
+            self._stress = stress_temp
+            self._Et = self._unload_slope
+        # further into tension
         else:
-            if eps >= epp:
-                self._stress = 0.0
-                self._Et = 0.0
-                return
-            stress = -(sgr * eps - epp * sgr) / (epr - epp)
-            tangen = -sgr / (epr - epp)
+            self._stress = 0.0
+            self._Et = 0.0
 
-        self._stress = -1 * stress
-        self._Et = -1 * tangen
+        return reversal
+
+    def _reload(self):
+        if self._strain < self._strain_min:
+            self._strain_min = self._strain
+            self._envelope()
+            self._unload()
+        elif self._strain < self._strain_end:
+            self._Et = self._unload_slope
+            self._stress = self._Et * (self._strain - self._strain_end)
+        else:
+            self._stress = 0.0
+            self._Et = 0.0
+
+    def _envelope(self):
+        if self._strain > self._strain_0:
+            eta = self._strain / self._strain_0
+            self._stress = self._fc * (2 * eta - eta * eta)
+            E0 = 2 * self._fc / self._strain_0
+            self._Et = E0 * (1.0 - eta)
+        elif self._strain >= self._strain_u:
+            self._Et = (self._fc - 0.2 * self._fc) / (self._strain_0 - self._strain_u)
+            self._stress = self._fc + self._Et * (self._strain - self._strain_0)
+        else:
+            self._stress = 0.2 * self._fc
+            self._Et = 0.0
+
+    def _unload(self):
+        # is strain_temp strain_r?
+        strain_temp = self._strain_min
+        if strain_temp < self._strain_u:
+            strain_temp = self._strain_u
+        eta = strain_temp / self._strain_0
+        ratio = 0.707 * (eta - 2.0) + 0.834
+        if eta < 2:
+            ratio = 0.145 * eta * eta + 0.13 * eta
+        self._strain_end = ratio * self._strain_0
+
+        temp1 = self._strain_min - self._strain_end
+        E0 = 2 * self._fc / self._strain_0
+        temp2 = self._stress / E0
+        if temp1 > -1e-15:
+            self._unload_slope = E0
+        elif temp1 <= temp2:
+            self._strain_end = self._strain_min - temp1
+            self._unload_slope = self._stress / temp1
+        else:
+            self._strain_end = self._strain_min - temp2
+            self._unload_slope = E0
 
     def finalize_load_step(self):
         """
         update the converged variables. Called when the
         whole structure is converged at the load step
         """
-        self._c_loading_index = self._loading_index
-        self._c_strain_p = self._strain_p
-        self._c_strain_r = self._strain_r
-        self._c_stress_r = self._stress_r
         self._c_strain = self._strain
         self._c_stress = self._stress
+        self._c_strain_min = self._strain_min
+        self._c_strain_end = self._strain_end
+        self._c_unload_slope = self._unload_slope
+        self._c_Et = self._Et

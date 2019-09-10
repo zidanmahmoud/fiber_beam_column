@@ -178,6 +178,7 @@ ax.plot(fiber._strain_0, fiber._stress_0, "-o", color="black")
 strains = np.concatenate(
     (np.linspace(0.000, 0.005), np.linspace(0.005, -0.01), np.linspace(-0.01, -0.0005))
 )
+# f = np.sort(np.random.randint(0, strains.size, strains.size // 2))
 f = np.linspace(0, strains.size - 1, strains.size, dtype=int)
 nf = []
 
@@ -188,13 +189,11 @@ nf = []
 stresses = []
 for i, strain in enumerate(strains):
     reversal = fiber.update_strain(strain)
-    # fiber.calculate_stress_and_tangent_modulus()
     if i in f:
         fiber.finalize()
     stresses.append(fiber.stress)
-    if reversal:
-        print(fiber._stress_0)
 stresses = np.array(stresses)
+
 ax.plot(strains[f], stresses[f], "-o", color="black", markerfacecolor="none")
 ax.plot(strains[nf], stresses[nf], "o", color="orange")
 ax.grid()

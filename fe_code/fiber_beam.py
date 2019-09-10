@@ -229,11 +229,11 @@ class FiberBeam:
         """
         finalize for next load step
         """
-        self._displacement_increment.fill(0)
-        self._force_increment.fill(0)
+        self.converged_resisting_forces = self.resisting_forces
+        self._displacement_increment.fill(0.0)
+        self._force_increment.fill(0.0)
         for section in self.sections:
             section.finalize_load_step()
-        self.converged_resisting_forces = self.resisting_forces
 
 
 def _calculate_b_matrix(gauss_point):

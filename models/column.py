@@ -1,7 +1,7 @@
 import numpy as np
 from math import sqrt, pi
 
-from fe_code import io, Structure, MenegottoPinto, KentPark, KentParkMod, MenegottoPintoMod
+from fe_code import io, Structure, MenegottoPinto, KentPark
 
 
 def model1():
@@ -12,8 +12,8 @@ def model1():
     height = 8
 
     no_fibers_y = 15
-    no_fibers_z = 15
-    no_sections = 4
+    no_fibers_z = 20
+    no_sections = 5
 
     # STRUCTURE INITIALIZATION
     stru = Structure()
@@ -34,31 +34,41 @@ def model1():
     print(f"Added {sum([len(element.sections) for element in stru.elements])} sections.")
 
     # FIBERS
-    fiber_area = (width / no_fibers_y) * (height / no_fibers_z)
     w = width / no_fibers_y
     h = height / no_fibers_z
+    fiber_area = w * h
     counter = 1
     for section in stru.get_element(1).sections:
         for i in range(no_fibers_y):
             y = width / no_fibers_y * (i + 0.5)
             for j in range(no_fibers_z):
                 z = height / no_fibers_z * (j + 0.5)
-                if i in (1, 13) and j in (1, 13):
+                if i in (1, 13) and j in (1, 18):
                     section.add_fiber(
                         counter,
                         y,
                         z,
                         fiber_area,
-                        MenegottoPintoMod(29000, 0.0042, 60, 20, 18.5, 0.0002),
+                        MenegottoPinto(29000, 0.0042, 60, 20, 18.5, 0.0002),
                         w,
                         h,
                     )
                 else:
                     section.add_fiber(
-                        counter, y, z, fiber_area, KentParkMod(6.95, 1, 770, 0.0027), w, h
+                        counter, y, z, fiber_area, KentPark(6.95, 1, 770, 0.0027), w, h
                     )
                 counter += 1
     print(f"Added {counter - 1} fibers.")
+
+    # CONVERGENCE TOLERANCE VALUES
+    stru.tolerance = 0.05
+    stru.set_section_tolerance(0.05)
+
+    # BOUNDARY CONDITIONS
+    stru.set_controled_dof(2, "w")
+    stru.add_dirichlet_condition(1, "uvwxyz", 0)
+    stru.add_dirichlet_condition(2, "x", 0)
+    print("Added the boundary conditions.")
 
     return stru
 
@@ -108,26 +118,30 @@ def model2():
                         y,
                         z,
                         fiber_area,
-                        MenegottoPintoMod(29000, 0.0042, 48.4, 20, 18.5, 0.0002),
+                        MenegottoPinto(29000, 0.0042, 48.4, 20, 18.5, 0.0002),
                         w,
                         h,
                     )
                 elif i < 2 or i > 7 or j < 2 or j > 13:
                     section.add_fiber(
-                        counter, y, z, fiber_area, KentParkMod.eu(6.95, 1, 0.00292, 0.0027), w, h
+                        counter, y, z, fiber_area, KentPark.eu(6.95, 1, 0.00292, 0.0027), w, h
                     )
                 else:
                     section.add_fiber(
-                        counter,
-                        y,
-                        z,
-                        fiber_area,
-                        KentParkMod.eu(6.95, 1.0763, 0.03810, 0.0027),
-                        w,
-                        h,
+                        counter, y, z, fiber_area, KentPark.eu(6.95, 1.0763, 0.03810, 0.0027), w, h
                     )
                 counter += 1
     print(f"Added {counter - 1} fibers.")
+
+    # CONVERGENCE TOLERANCE VALUES
+    stru.tolerance = 0.05
+    stru.set_section_tolerance(0.05)
+
+    # BOUNDARY CONDITIONS
+    stru.set_controled_dof(2, "w")
+    stru.add_dirichlet_condition(1, "uvwxyz", 0)
+    stru.add_dirichlet_condition(2, "x", 0)
+    print("Added the boundary conditions.")
 
     return stru
 
@@ -178,7 +192,7 @@ def model3():
     zs = np.repeat(np.linspace(-z, z, no_z), no_y)
     for section in stru.get_element(1).sections:
         for y, z in zip(ys, zs):
-            section.add_fiber(counter, y, z, area, KentParkMod.eu(6.95, 1, 0.03810, 0.0027), w, h)
+            section.add_fiber(counter, y, z, area, KentPark.eu(6.95, 1, 0.03810, 0.0027), w, h)
             counter += 1
 
     # == unconfined sides
@@ -192,7 +206,7 @@ def model3():
     zs = np.repeat(np.linspace(-z, z, 10), 2)
     for section in stru.get_element(1).sections:
         for y, z in zip(ys, zs):
-            section.add_fiber(counter, y, z, area, KentParkMod.eu(6.95, 1, 0.00292, 0.0027), w, h)
+            section.add_fiber(counter, y, z, area, KentPark.eu(6.95, 1, 0.00292, 0.0027), w, h)
             counter += 1
 
     # == unconfined bottom
@@ -206,7 +220,7 @@ def model3():
     zs = np.repeat(np.linspace(-zmin, -zmax, 4), 2)
     for section in stru.get_element(1).sections:
         for y, z in zip(ys, zs):
-            section.add_fiber(counter, y, z, area, KentParkMod.eu(6.95, 1, 0.00292, 0.0027), w, h)
+            section.add_fiber(counter, y, z, area, KentPark.eu(6.95, 1, 0.00292, 0.0027), w, h)
             counter += 1
 
     # == unconfined top
@@ -214,7 +228,7 @@ def model3():
     zs = np.repeat(np.linspace(zmin, zmax, 4), 2)
     for section in stru.get_element(1).sections:
         for y, z in zip(ys, zs):
-            section.add_fiber(counter, y, z, area, KentParkMod.eu(6.95, 1, 0.00292, 0.0027), w, h)
+            section.add_fiber(counter, y, z, area, KentPark.eu(6.95, 1, 0.00292, 0.0027), w, h)
             counter += 1
 
     # == steel
@@ -228,10 +242,20 @@ def model3():
     for section in stru.get_element(1).sections:
         for y, z in zip(ys, zs):
             section.add_fiber(
-                counter, y, z, area, MenegottoPintoMod(29000, 0.0042, 48.4, 20, 18.5, 0.0002), w, h
+                counter, y, z, area, MenegottoPinto(29000, 0.0042, 48.4, 20, 18.5, 0.0002), w, h
             )
             counter += 1
 
     print(f"Added {counter - 1} fibers.")
+
+    # CONVERGENCE TOLERANCE VALUES
+    stru.tolerance = 0.05
+    stru.set_section_tolerance(0.05)
+
+    # BOUNDARY CONDITIONS
+    stru.set_controled_dof(2, "w")
+    stru.add_dirichlet_condition(1, "uvwxyz", 0)
+    stru.add_dirichlet_condition(2, "x", 0)
+    print("Added the boundary conditions.")
 
     return stru

@@ -72,9 +72,10 @@ class KentPark:
         """
         FIXME
         """
-        self._set_trial_state(value)
+        return self._set_trial_state(value)
 
     def _set_trial_state(self, new_strain):
+        reversal = False
         self._strain_min = self._c_strain_min
         self._strain_end = self._c_strain_end
         self._unload_slope = self._c_unload_slope
@@ -84,13 +85,13 @@ class KentPark:
 
         deps = new_strain - self._c_strain
         if abs(deps) < 1e-15:
-            return
+            return reversal
 
         self._strain = new_strain
         if self._strain > 0.0:
             self._stress = 0.0
             self._Et = 0.0
-            return
+            return reversal
 
         self._unload_slope = self._c_unload_slope
 
@@ -107,12 +108,16 @@ class KentPark:
                 self._Et = self._unload_slope
         # towards tension
         elif stress_temp <= 0.0:
+            if self._c_strain == self._strain_min:
+                reversal = True
             self._stress = stress_temp
             self._Et = self._unload_slope
         # further into tension
         else:
             self._stress = 0.0
             self._Et = 0.0
+
+        return reversal
 
     def _reload(self):
         if self._strain < self._strain_min:
@@ -189,29 +194,27 @@ strains = np.concatenate(
         np.linspace(0, -0.01, num=50),
     )
 )
-idx = np.sort(np.random.randint(0, strains.size, strains.size // 3))
+# f = np.sort(np.random.randint(0, strains.size, strains.size // 2))
+f = np.linspace(0, strains.size - 1, strains.size, dtype=int)
+idx = np.linspace(0, strains.size - 1, strains.size, dtype=int)
+nf = idx[np.invert(np.in1d(idx, f))]
 
-# strains = [
-#     0,
-#     -0.001,
-#     -0.002,
-#     -0.003,
-#     -0.004
-# ]
-# idx = [
-#     0, 1, 2, 3, 4
-# ]
+# strains = np.array([0, -0.001, -0.002, -0.0035, -0.0015, -0.0031, -0.003, -0.004, -0.005])
+# f = [0, 1, 2, 6, 7, 8]
+# nf = [3, 4, 5]
 
 stresses = list()
 for i, strain in enumerate(strains):
-    fiber.update_strain(strain)
-    # if i in idx:
-    fiber.finalize()
+    reversal = fiber.update_strain(strain)
+    if reversal:
+        print("fiber reversin")
+    if i in f:
+        fiber.finalize()
     stresses.append(fiber.stress)
-# strains = np.array(strains)
-# strains = strains[idx]
+stresses = np.array(stresses)
 
-line, = ax.plot(strains, stresses, "o-", color="black", mfc="none")
+line, = ax.plot(strains[f], stresses[f], "-o", color="black", markerfacecolor="none")
+ax.plot(strains[nf], stresses[nf], "o", color="orange")
 ax.invert_yaxis()
 ax.invert_xaxis()
 ax.grid()
@@ -221,7 +224,7 @@ ax.set(xlabel="CONCRETE STRAIN", ylabel="CONCRETE STRESS")
 
 
 # def update(frame):
-#     line.set_data(strains[:frame], stresses[:frame])
+#     line.set_data(strains[f][:frame], stresses[f][:frame])
 #     return line,
 
 

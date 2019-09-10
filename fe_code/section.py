@@ -4,7 +4,7 @@ Section
 import numpy as np
 
 from .fiber import Fiber
-from .material_laws import Material
+from .material_laws import UniaxialIncrementalMaterial
 
 
 class Section:
@@ -83,9 +83,12 @@ class Section:
         material_class : object of type Material
             material model
         """
-        # if not isinstance(material_class, Material):
-        #     raise ValueError("material_class is not of type : Material")
+        if not isinstance(material_class, UniaxialIncrementalMaterial):
+            raise ValueError("material_class is not of type : Material")
         self._fibers[fiber_id] = Fiber(fiber_id, y, z, area, material_class, w, h)
+
+    def get_fiber(self, fiber_id):
+        return self._fibers[fiber_id]
 
     def initialize(self):
         """initialize stiffness matrix"""
@@ -136,15 +139,15 @@ class Section:
         for fiber in self.fibers:
             resisting_forces += fiber.stress * fiber.area * fiber.direction
         self._unbalance_forces = self._forces - resisting_forces
-        self.residual = np.linalg.inv(self.stiffness_matrix) @ self._unbalance_forces
+        self.residual = np.linalg.solve(self.stiffness_matrix, self._unbalance_forces)
 
     def finalize_load_step(self):
         """
         finalize for next load step
         """
         self._converged_section_forces = self._forces
-        self._deformation_increment = np.zeros(3)
-        self._force_increment = np.zeros(3)
+        self._deformation_increment.fill(0.0)
+        self._force_increment.fill(0.0)
         for fiber in self.fibers:
             fiber.finalize_load_step()
 

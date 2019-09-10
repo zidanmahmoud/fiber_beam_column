@@ -3,8 +3,6 @@ Module contains only the fiber class
 """
 import numpy as np
 
-from .material_laws import KentParkMod
-
 
 class Fiber:
     """
@@ -67,7 +65,8 @@ class Fiber:
         """ step 10 + 11 """
         self._chng_strain_increment = self.direction @ sec_chng_def_increment
         self._strain_increment += self._chng_strain_increment
-        rev = self._material.update_strain(self.converged_strain + self._strain_increment)
+        self.strain = self.converged_strain + self._strain_increment
+        rev = self._material.update_strain(self.strain)
         # if rev:
         #     self._material.reverse()
         # self._material.calculate_stress_and_tangent_modulus()
@@ -78,7 +77,7 @@ class Fiber:
 
     def increment_strain(self):
         """ step 10 """
-        self.strain = self.converged_strain + self._strain_increment
+        pass
 
     def calculate_stress(self):
         """ step 11 """
@@ -88,6 +87,6 @@ class Fiber:
         """
         finalize for next load step
         """
-        self._material.finalize_load_step()
         self.converged_strain = self.strain
         self._strain_increment = 0.0
+        self._material.finalize_load_step()

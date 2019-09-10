@@ -196,7 +196,7 @@ class Structure:
         rhs[:dofs] = self._unbalanced_forces
         rhs[-1] = vector @ self._displacement_increment - self.controled_dof_increment
 
-        change_in_increments = np.linalg.inv(lhs) @ rhs
+        change_in_increments = np.linalg.solve(lhs, rhs)
         self._displacement_increment += change_in_increments[:dofs]
         self._load_factor_increment += change_in_increments[-1]
         self._displacement = self.converged_displacement + self._displacement_increment
@@ -212,8 +212,8 @@ class Structure:
         # STEP 5
         for j in range(1, max_ele_iterations + 1):
             conv, rev = self.element_loop()
-            # if rev > 0:
-            #     print(f" --- reversing {rev} fibers --- ")
+            if rev > 0:
+                print(f" --- reversed {rev} fibers --- ")
 
             # STEP 17
             if conv:  # all elements converged
@@ -238,6 +238,7 @@ class Structure:
             element.calculate_forces()
             rev += element.state_determination()
             element.calculate_displacement_residuals()
+            # print(np.linalg.norm(element.displacement_residual))
             conv *= element.check_convergence()
         return conv, rev
 
@@ -260,7 +261,7 @@ class Structure:
 
     def finalize_load_step(self):
         """ step 21 """
-        self._displacement_increment = np.zeros(self.no_dofs)
+        self._displacement_increment.fill(0.0)
         self._load_factor_increment = 0.0
         self.converged_displacement = self._displacement
         self.converged_load_factor = self._load_factor
