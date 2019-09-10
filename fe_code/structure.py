@@ -68,6 +68,7 @@ class Structure:
         self.controled_dof_increment = 0.0
 
         # initialized as None because the number of dofs is not yet determined
+        self._resisting_forces = None
         self._stiffness = None
         self._unbalanced_forces = None
         self._displacement_increment = None
@@ -143,6 +144,17 @@ class Structure:
         """ converged_controled_dof """
         return self.converged_displacement[index_from_dof(self.controled_dof)]
 
+    def get_force(self, dof):
+        node_id, dof_type = dof
+        i = index_from_dof(DoF(node_id, dof_type))
+        forces = self._stiffness @ self.converged_displacement
+        return self._resisting_forces[i]
+
+    def get_dof_value(self, dof):
+        node_id, dof_type = dof
+        i = index_from_dof(DoF(node_id, dof_type))
+        return self.converged_displacement[i]
+
     def initialize(self):
         """ initialize all arrays and stuff """
         self._stiffness = np.zeros((self.no_dofs, self.no_dofs))
@@ -151,6 +163,7 @@ class Structure:
         self._displacement_increment = np.zeros(self.no_dofs)
         self._displacement = np.zeros(self.no_dofs)
         self.converged_displacement = np.zeros(self.no_dofs)
+        self._resisting_forces = np.zeros(self.no_dofs)
 
         for element in self.elements:
             element.initialize()
@@ -166,7 +179,7 @@ class Structure:
 
         self._stiffness = stiffness_matrix
 
-    def _calculate_force_vector(self):
+    def _calculate_external_force_vector(self):
         forces = np.zeros(self.no_dofs)
         dof = self.controled_dof
         forces[index_from_dof(dof)] += self._load_factor
@@ -244,18 +257,18 @@ class Structure:
 
     def check_nr_convergence(self):
         """ steps 18-20 """
-        resisting_forces = np.zeros(self.no_dofs)
+        self._resisting_forces.fill(0.0)
         for element in self.elements:
             f_e = element.get_global_resisting_forces()
             i = [index_from_dof(dof) for dof in element.dofs]
-            resisting_forces[i] += f_e
+            self._resisting_forces[i] += f_e
+
+        external_forces = self._calculate_external_force_vector()
+        self._unbalanced_forces = external_forces - self._resisting_forces
         for dof, value in self._dirichlet_conditions.items():
             if value == 0:
-                resisting_forces[index_from_dof(dof)] = value
+                self._unbalanced_forces[index_from_dof(dof)] = value
 
-        external_forces = self._calculate_force_vector()
-
-        self._unbalanced_forces = external_forces - resisting_forces
         res = abs(np.linalg.norm(self._unbalanced_forces))
         return res < self._tolerance, res
 

@@ -13,7 +13,7 @@ def model1():
 
     no_fibers_y = 15
     no_fibers_z = 20
-    no_sections = 5
+    no_sections = 4
 
     # STRUCTURE INITIALIZATION
     stru = Structure()
@@ -67,7 +67,7 @@ def model1():
     # BOUNDARY CONDITIONS
     stru.set_controled_dof(2, "w")
     stru.add_dirichlet_condition(1, "uvwxyz", 0)
-    stru.add_dirichlet_condition(2, "x", 0)
+    stru.add_dirichlet_condition(2, "vxz", 0)
     print("Added the boundary conditions.")
 
     return stru
@@ -80,9 +80,9 @@ def model2():
     width = 5
     height = 8
 
-    no_fibers_y = 10
-    no_fibers_z = 16
-    no_sections = 3
+    no_fibers_y = 15
+    no_fibers_z = 20
+    no_sections = 4
 
     # STRUCTURE INITIALIZATION
     stru = Structure()
@@ -103,16 +103,16 @@ def model2():
     print(f"Added {sum([len(element.sections) for element in stru.elements])} sections.")
 
     # FIBERS
-    fiber_area = (width / no_fibers_y) * (height / no_fibers_z)
-    w = sqrt(fiber_area)
-    h = sqrt(fiber_area)
+    w = width / no_fibers_y
+    h = height / no_fibers_z
+    fiber_area = w * h
     counter = 1
     for section in stru.get_element(1).sections:
         for i in range(no_fibers_y):
             y = width * (-0.5 + (i + 0.5) / no_fibers_y)
             for j in range(no_fibers_z):
                 z = height * (-0.5 + (j + 0.5) / no_fibers_z)
-                if i in (2, 7) and j in (2, 13):
+                if i in (1, 13) and j in (1, 18):
                     section.add_fiber(
                         counter,
                         y,
@@ -122,7 +122,7 @@ def model2():
                         w,
                         h,
                     )
-                elif i < 2 or i > 7 or j < 2 or j > 13:
+                elif i < 1 or i > 13 or j < 1 or j > 18:
                     section.add_fiber(
                         counter, y, z, fiber_area, KentPark.eu(6.95, 1, 0.00292, 0.0027), w, h
                     )
@@ -155,7 +155,7 @@ def model3():
     cover_y = 0.79
     cover_z = 1.0
 
-    no_sections = 4
+    no_sections = 3
 
     # STRUCTURE INITIALIZATION
     stru = Structure()
@@ -255,7 +255,7 @@ def model3():
     # BOUNDARY CONDITIONS
     stru.set_controled_dof(2, "w")
     stru.add_dirichlet_condition(1, "uvwxyz", 0)
-    stru.add_dirichlet_condition(2, "x", 0)
+    stru.add_dirichlet_condition(2, "vxz", 0)
     print("Added the boundary conditions.")
 
     return stru

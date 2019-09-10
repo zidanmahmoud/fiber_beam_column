@@ -28,7 +28,7 @@ def advance_in_load(structure, load_step):
 
 
 def solution_loop(structure, *plot_args, **plot_kwargs):
-    max_nr_iterations = 100
+    max_nr_iterations = 10
     max_ele_iterations = 100
 
     structure.initialize()
@@ -56,10 +56,14 @@ def solution_loop(structure, *plot_args, **plot_kwargs):
                 break
             if i == max_nr_iterations:
                 io.warning(f"Newton-Raphson did not converge {max_nr_iterations} iterations")
+                io.warning("FATAL ERROR: The solution is unstable")
+                break
 
         structure.finalize_load_step()
-        load.append(100 * structure.converged_load_factor)
-        disp.append(1 / 10000 * 3 * structure.converged_controled_dof)
+        # load.append(100 * structure.converged_load_factor)
+        # disp.append(1 / 10000 * 3 * structure.converged_controled_dof)
+        load.append(structure.get_force((1, "y")))
+        disp.append(-1/40 * structure.get_dof_value((2, "y")))
 
         # fiber = structure.get_element(1).get_section(1).get_fiber(279)
         # stresses.append(fiber.stress)
@@ -83,7 +87,7 @@ if __name__ == "__main__":
     STEP = 0.4
     STEPS = calculate_loadsteps(STEP)
 
-    stru = model1()
+    stru = model3()
     p.plot_disctrized_2d(stru.get_element(1))
     d, l, sig, eps = solution_loop(stru, "-o", color="blue", mfc="none")
     # p.custom_2d_plot(eps, sig, "blue")
