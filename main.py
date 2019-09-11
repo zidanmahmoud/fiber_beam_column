@@ -4,7 +4,7 @@ Example
 
 import plotting as p
 from fe_code import io
-from models.column import model1, model2, model3
+from models.column import model1, model2, model3, model1c
 from disp_calc import calculate_loadsteps
 
 
@@ -61,9 +61,9 @@ def solution_loop(structure, *plot_args, **plot_kwargs):
 
         structure.finalize_load_step()
         # load.append(100 * structure.converged_load_factor)
-        # disp.append(1 / 10000 * 3 * structure.converged_controled_dof)
+        # disp.append(1.0 / 10000 * 3 * structure.converged_controled_dof)
         load.append(structure.get_force((1, "y")))
-        disp.append(-1/40 * structure.get_dof_value((2, "y")))
+        disp.append(-1.0/40 * structure.get_dof_value((2, "y")))
 
         # fiber = structure.get_element(1).get_section(1).get_fiber(279)
         # stresses.append(fiber.stress)
@@ -87,7 +87,7 @@ if __name__ == "__main__":
     STEP = 0.4
     STEPS = calculate_loadsteps(STEP)
 
-    stru = model3()
+    stru = model1c()
     p.plot_disctrized_2d(stru.get_element(1))
     d, l, sig, eps = solution_loop(stru, "-o", color="blue", mfc="none")
     # p.custom_2d_plot(eps, sig, "blue")

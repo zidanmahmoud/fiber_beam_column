@@ -73,6 +73,75 @@ def model1():
     return stru
 
 
+def model1c():
+    """ initiate the structural model """
+
+    length = 100
+    width = 5
+    height = 8
+
+    no_fibers_y = 15
+    no_fibers_x = 20
+    no_sections = 4
+
+    # STRUCTURE INITIALIZATION
+    stru = Structure()
+    print("Constructed an empty stucture.")
+
+    # NODES
+    stru.add_node(1, 0.0, 0.0, 0.0)
+    stru.add_node(2, 0.0, 0.0, length)
+    print(f"Added {len(stru.nodes)} nodes.")
+
+    # ELEMENTS
+    stru.add_fiber_beam_element(1, 1, 2)
+    print(f"Added {len(stru.elements)} elements.")
+
+    # SECTIONS
+    for i in range(no_sections):
+        stru.get_element(1).add_section(i + 1)
+    print(f"Added {sum([len(element.sections) for element in stru.elements])} sections.")
+
+    # FIBERS
+    w = width / no_fibers_y
+    h = height / no_fibers_x
+    fiber_area = w * h
+    counter = 1
+    for section in stru.get_element(1).sections:
+        for i in range(no_fibers_y):
+            y = width / no_fibers_y * (i + 0.5)
+            for j in range(no_fibers_x):
+                z = height / no_fibers_x * (j + 0.5)
+                if i in (1, 13) and j in (1, 18):
+                    section.add_fiber(
+                        counter,
+                        y,
+                        z,
+                        fiber_area,
+                        MenegottoPinto(29000, 0.0042, 60, 20, 18.5, 0.0002),
+                        w,
+                        h,
+                    )
+                else:
+                    section.add_fiber(
+                        counter, y, z, fiber_area, KentPark(6.95, 1, 770, 0.0027), w, h
+                    )
+                counter += 1
+    print(f"Added {counter - 1} fibers.")
+
+    # CONVERGENCE TOLERANCE VALUES
+    stru.tolerance = 0.05
+    stru.set_section_tolerance(0.05)
+
+    # BOUNDARY CONDITIONS
+    stru.set_controled_dof(2, "u")
+    stru.add_dirichlet_condition(1, "uvwxyz", 0)
+    stru.add_dirichlet_condition(2, "vxz", 0)
+    print("Added the boundary conditions.")
+
+    return stru
+
+
 def model2():
     """ initiate the structural model """
 

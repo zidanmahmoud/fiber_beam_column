@@ -152,7 +152,7 @@ class FiberBeam:
 
     def calculate_displacement_increment_from_structure(self, structure_chng_disp_incr):
         """step 4"""
-        self._calculate_transform_matrix()
+        # self._calculate_transform_matrix()  # TODO: do we need this?! probably not ... check with all models
         self._chng_disp_incr = self._transform_matrix.T @ structure_chng_disp_incr
         self._displacement_increment += self._chng_disp_incr
 
@@ -247,8 +247,9 @@ def _calculate_b_matrix(gauss_point):
 
 
 def _get_triad(reference_local_vector):
+    # TODO: Generalize this.. this should define the local to global coord. sys.
     e_1 = reference_local_vector / np.linalg.norm(reference_local_vector)
-    e_2 = np.cross([0, 0, 1], e_1)
+    e_2 = np.cross([1, 0, 0], e_1)
     e_2 /= np.linalg.norm(e_2)
     e_3 = np.cross(e_1, e_2)
     return e_1, e_2, e_3
