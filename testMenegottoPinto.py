@@ -112,7 +112,7 @@ class MenegottoPinto:
         self._strain_0 = (E * epr - sgr + sgy * (1 - b)) / (E * (1 - b))
         self._stress_0 = b * E * self._strain_0 + sgy * (1 - b)
         eps_intersect = ((sgr - lepr) + E * b * lepr - E * epr) / (E * (b - 1))
-        self._xi = abs(eps_intersect - lepr)
+        self._xi = abs(eps_intersect - lepr) # shouldn't this be divided by eps_y??
         self._R = self._R0 - self._a1 * self._xi / (self._a2 + self._xi)
 
         # global ax

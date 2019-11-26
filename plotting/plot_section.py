@@ -5,14 +5,13 @@ from math import sqrt
 from fe_code import KentPark, MenegottoPinto
 
 
-def plot_disctrized_2d(beam):
+def plot_disctrized_2d(section):
 
     fig = plt.figure()
     axes = fig.add_subplot(111)
-    for fiber in beam.get_section(1).fibers:
+    for fiber in section.fibers:
         y = -fiber.direction[0]
         z = fiber.direction[1]
-        side = sqrt(fiber.area)
         if isinstance(fiber._material, KentPark):
             fcolor = "grey"
         elif isinstance(fiber._material, MenegottoPinto):

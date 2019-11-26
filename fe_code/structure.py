@@ -36,52 +36,38 @@ class Structure:
 
     elements : dict_values
 
-    controled_dof : Dof object
+    controlled_dof : Dof object
 
     no_dofs : flaot
         number of dofs
 
-    converged_load_factor : float
-
-    converged_displacement : ndarray
-
-    controled_dof_increment : float
+    controlled_dof_increment : float
         used in the displacement-control solver
-
-    tolerance : float
-        used to check convergence
-        default is 1e-7
     """
 
     def __init__(self):
         self._nodes = dict()
         self._elements = dict()
         self._dirichlet_conditions = dict()
-        self._newmann_conditions = dict()
+        self._neumann_conditions = dict()
         self._tolerance = 1e-7
 
-        self.controled_dof = None
+        self._controlled_dof = None
 
         self._load_factor_increment = 0.0
         self._load_factor = 0.0
-        self.converged_load_factor = 0.0
-        self.controled_dof_increment = 0.0
+        self._converged_load_factor = 0.0
+        self.controlled_dof_increment = 0.0
 
         # initialized as None because the number of dofs is not yet determined
         self._resisting_forces = None
-        self._stiffness = None
+        self._stiffness_matrix = None
         self._unbalanced_forces = None
         self._displacement_increment = None
         self._displacement = None
-        self.converged_displacement = None
+        self._converged_displacement = None
 
-    @property
-    def tolerance(self):
-        """ tolerance to check convergence """
-        return self._tolerance
-
-    @tolerance.setter
-    def tolerance(self, value):
+    def set_tolerance(self, value):
         self._tolerance = value
 
     def set_section_tolerance(self, value):
@@ -133,153 +119,150 @@ class Structure:
         """ add a Neumann boundary condition """
         for dof_type in dof_types:
             dof = DoF(node_id, dof_type)
-            self._newmann_conditions[dof] = value
+            self._neumann_conditions[dof] = value
 
-    def set_controled_dof(self, node_id, dof_type):
-        """ sets the controled dof """
-        self.controled_dof = DoF(node_id, dof_type)
-
-    @property
-    def converged_controled_dof(self):
-        """ converged_controled_dof """
-        return self.converged_displacement[index_from_dof(self.controled_dof)]
+    def set_controlled_dof(self, node_id, dof_type):
+        """ sets the controlled dof """
+        self._controlled_dof = DoF(node_id, dof_type)
 
     def get_force(self, dof):
         node_id, dof_type = dof
         i = index_from_dof(DoF(node_id, dof_type))
-        forces = self._stiffness @ self.converged_displacement
         return self._resisting_forces[i]
 
-    def get_dof_value(self, dof):
+    def get_forces(self):
+        return self._resisting_forces
+
+    def get_displacement(self, dof):
         node_id, dof_type = dof
         i = index_from_dof(DoF(node_id, dof_type))
-        return self.converged_displacement[i]
+        return self._converged_displacement[i]
+
+    def get_displacements(self):
+        return self._converged_displacement
+
+    def get_dof_value(self, dof):
+        if isinstance(dof, DoF):
+            node_id = dof.node_id
+            dof_type = dof.type
+        elif isinstance(dof, tuple):
+            node_id, dof_type = dof
+        else:
+            raise
+        i = index_from_dof(DoF(node_id, dof_type))
+        return self._converged_displacement[i]
+
+    ####################################################################################
 
     def initialize(self):
         """ initialize all arrays and stuff """
-        self._stiffness = np.zeros((self.no_dofs, self.no_dofs))
+        #== step 1 ==#
+        self._stiffness_matrix = np.zeros((self.no_dofs, self.no_dofs))
         self._displacement_increment = np.zeros(self.no_dofs)
         self._unbalanced_forces = np.zeros(self.no_dofs)
         self._displacement_increment = np.zeros(self.no_dofs)
         self._displacement = np.zeros(self.no_dofs)
-        self.converged_displacement = np.zeros(self.no_dofs)
+        self._converged_displacement = np.zeros(self.no_dofs)
         self._resisting_forces = np.zeros(self.no_dofs)
-
         for element in self.elements:
             element.initialize()
-        self._calculate_stiffness_matrix()
+        self._update_stiffness_matrix()
 
-    def _calculate_stiffness_matrix(self):
-        stiffness_matrix = np.zeros((self.no_dofs, self.no_dofs))
-
-        for element in self.elements:
-            k_e = element.get_global_stiffness_matrix()
-            i = [index_from_dof(dof) for dof in element.dofs]
-            stiffness_matrix[np.ix_(i, i)] = k_e  # stiffness_matrix[i][:i] = k_e
-
-        self._stiffness = stiffness_matrix
-
-    def _calculate_external_force_vector(self):
-        forces = np.zeros(self.no_dofs)
-        dof = self.controled_dof
-        forces[index_from_dof(dof)] += self._load_factor
-        return forces
-
-    def solve(self, max_ele_iterations):
+    def solve_NR_iteration(self, max_ele_iterations):
         """
         main solution loop until element convergence
-
-        steps 3-17
         """
-        dofs = self.no_dofs
-        lhs = np.zeros((dofs + 1, dofs + 1))
-        lhs[:dofs, :dofs] = self._stiffness
-        for dof, value in self._dirichlet_conditions.items():
-            if value == 0:
-                i = index_from_dof(dof)
-                lhs[:, i] = 0
-                lhs[i, :] = 0
-                lhs[i, i] = 1
-
-        vector = np.zeros(dofs)
-        vector[index_from_dof(self.controled_dof)] = 1.0
-        lhs[:dofs, -1] = -vector
-        lhs[-1, :dofs] = -vector
-        rhs = np.zeros(dofs + 1)
-        rhs[:dofs] = self._unbalanced_forces
-        rhs[-1] = vector @ self._displacement_increment - self.controled_dof_increment
+        #== step 4 ==#
+        lhs, rhs = self._build_system_NR_displacement_control()
+        self._apply_homogenuous_dirichlet_BCs(lhs)
 
         change_in_increments = np.linalg.solve(lhs, rhs)
-        self._displacement_increment += change_in_increments[:dofs]
+        self._displacement_increment += change_in_increments[:self.no_dofs]
         self._load_factor_increment += change_in_increments[-1]
-        self._displacement = self.converged_displacement + self._displacement_increment
-        self._load_factor = self.converged_load_factor + self._load_factor_increment
+        self._displacement = self._converged_displacement + self._displacement_increment
+        self._load_factor = self._converged_load_factor + self._load_factor_increment
 
-        # STEP 4
+        #== steps 5-14 ==#
         for element in self.elements:
             indices = [index_from_dof(dof) for dof in element.dofs]
-            element.calculate_displacement_increment_from_structure(
-                change_in_increments[:dofs][indices]
-            )
+            element.state_determination(
+                change_in_increments[:self.no_dofs][indices], max_ele_iterations)
 
-        # STEP 5
-        for j in range(1, max_ele_iterations + 1):
-            conv, rev = self.element_loop()
-            if rev > 0:
-                print(f" --- reversed {rev} fibers --- ")
-
-            # STEP 17
-            if conv:  # all elements converged
-                self._calculate_stiffness_matrix()
-                for element in self.elements:
-                    element.displacement_residual.fill(0.0)
-                    for section in element.sections:
-                        section.residual.fill(0.0)
-                print(f"Elements converged with {j} iteration(s).")
-                break
-
-            if j == max_ele_iterations:
-                warning(f"ELEMENTS DID NOT CONVERGE WITH {max_ele_iterations} ITERATIONS")
-
-    def element_loop(self):
-        """
-        FIXME
-        """
-        conv = True
-        rev = 0
+        #== step 15 ==#
+        self._update_stiffness_matrix()
         for element in self.elements:
-            element.calculate_forces()
-            rev += element.state_determination()
-            element.calculate_displacement_residuals()
-            # print(np.linalg.norm(element.displacement_residual))
-            conv *= element.check_convergence()
-        return conv, rev
+            element.reset_section_residuals()
 
-    def check_nr_convergence(self):
-        """ steps 18-20 """
         self._resisting_forces.fill(0.0)
         for element in self.elements:
             f_e = element.get_global_resisting_forces()
             i = [index_from_dof(dof) for dof in element.dofs]
             self._resisting_forces[i] += f_e
 
-        external_forces = self._calculate_external_force_vector()
+        external_forces = self._get_external_force_vector() * self._load_factor
+
         self._unbalanced_forces = external_forces - self._resisting_forces
         for dof, value in self._dirichlet_conditions.items():
             if value == 0:
                 self._unbalanced_forces[index_from_dof(dof)] = value
 
+        #== step 16 ==#
         res = abs(np.linalg.norm(self._unbalanced_forces))
         return res < self._tolerance, res
 
+
     def finalize_load_step(self):
-        """ step 21 """
         self._displacement_increment.fill(0.0)
         self._load_factor_increment = 0.0
-        self.converged_displacement = self._displacement
-        self.converged_load_factor = self._load_factor
+        self._converged_displacement = self._displacement
+        self._converged_load_factor = self._load_factor
         for node in self.nodes:
             indices = [index_from_dof(DoF(node.id, dof_type)) for dof_type in "uvw"]
-            node.u, node.v, node.w = self.converged_displacement[indices]
+            node.u, node.v, node.w = self._converged_displacement[indices]
         for element in self.elements:
             element.finalize_load_step()
+
+
+    ####################################################################################
+
+
+    def _update_stiffness_matrix(self):
+        self._stiffness_matrix.fill(0.0)
+        for element in self.elements:
+            k_e = element.get_global_stiffness_matrix()
+            i = [index_from_dof(dof) for dof in element.dofs]
+            self._stiffness_matrix[np.ix_(i, i)] = k_e  # stiffness_matrix[i][:i] = k_e
+
+    def _apply_homogenuous_dirichlet_BCs(self, matrix=None, vector=None):
+        if matrix is not None:
+            for dof, value in self._dirichlet_conditions.items():
+                if value == 0:
+                    i = index_from_dof(dof)
+                    matrix[:, i] = 0
+                    matrix[i, :] = 0
+                    matrix[i, i] = 1
+        if vector is not None:
+            for dof, value in self._dirichlet_conditions.items():
+                if value == 0:
+                    i = index_from_dof(dof)
+                    vector[i] = 0
+
+    def _get_external_force_vector(self):
+        external_forces = np.zeros(self.no_dofs)
+        for dof, value in self._neumann_conditions.items():
+            external_forces[index_from_dof(self._controlled_dof)] += value
+        return external_forces
+
+    def _build_system_NR_displacement_control(self):
+        i = index_from_dof(self._controlled_dof)
+        dofs = self.no_dofs
+
+        lhs = np.zeros((dofs + 1, dofs + 1))
+        lhs[:dofs, :dofs] = self._stiffness_matrix # dr/du
+        lhs[:dofs, -1] = -self._get_external_force_vector() # dr/d lam
+        lhs[-1, i] = -1.0 # dr/dC
+
+        rhs = np.zeros(dofs + 1)
+        rhs[:dofs] = self._unbalanced_forces # r
+        rhs[-1] = self._displacement_increment[i] - self.controlled_dof_increment # C
+        return lhs, rhs

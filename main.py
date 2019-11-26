@@ -4,90 +4,113 @@ Example
 
 import plotting as p
 from fe_code import io
-from models.column import model1, model2, model3, model1c
-from disp_calc import calculate_loadsteps
+from models.column import *
+from disp_calc import *
 
 
 def advance_in_load(structure, load_step):
     """ load stepping loop """
 
     if load_step < STEPS[0]:
-        structure.controled_dof_increment = STEP
+        structure.controlled_dof_increment = STEP
     elif load_step < STEPS[1]:
-        structure.controled_dof_increment = -STEP
+        structure.controlled_dof_increment = -STEP
     elif load_step < STEPS[2]:
-        structure.controled_dof_increment = STEP
+        structure.controlled_dof_increment = STEP
     elif load_step < STEPS[3]:
-        structure.controled_dof_increment = -STEP
+        structure.controlled_dof_increment = -STEP
     elif load_step < STEPS[4]:
-        structure.controled_dof_increment = STEP
+        structure.controlled_dof_increment = STEP
     elif load_step < STEPS[5]:
-        structure.controled_dof_increment = -STEP
+        structure.controlled_dof_increment = -STEP
+    elif load_step < STEPS[6]:
+        structure.controlled_dof_increment = STEP
+    elif load_step < STEPS[7]:
+        structure.controlled_dof_increment = -STEP
+    elif load_step < STEPS[8]:
+        structure.controlled_dof_increment = STEP
+    elif load_step < STEPS[9]:
+        structure.controlled_dof_increment = -STEP
+    elif load_step < STEPS[10]:
+        structure.controlled_dof_increment = STEP
+    elif load_step < STEPS[11]:
+        structure.controlled_dof_increment = -STEP
+    elif load_step < STEPS[12]:
+        structure.controlled_dof_increment = STEP
+    elif load_step < STEPS[13]:
+        structure.controlled_dof_increment = -STEP
     else:
-        structure.controled_dof_increment = STEP
+        structure.controlled_dof_increment = STEP
 
 
-def solution_loop(structure, *plot_args, **plot_kwargs):
+def solution_loop(structure, result_filename="results.dat"):
     max_nr_iterations = 10
     max_ele_iterations = 100
 
     structure.initialize()
     print(":: Initialized the solver ::")
-
-    load = [0]
-    disp = [0]
     print("\n:: Starting solution loop ::")
 
-    if PLOT_FLAG:
-        fig, axes, line = p.initiate_plot(*plot_args, **plot_kwargs)
+    with open(result_filename, "w") as wfile:
+        wfile.write("#DISPLACEMENT LOAD\n")
+        wfile.write("0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0")
 
-    stresses = []
-    strains = []
+        for k in range(1, STEPS[-1]):
+            print(f"\nLOAD STEP : {k}")
+            advance_in_load(structure, k)
 
-    for k in range(1, STEPS[-1]):
-        print(f"\nLOAD STEP : {k}")
-        advance_in_load(structure, k)
-
-        for i in range(1, max_nr_iterations + 1):
-            structure.solve(max_ele_iterations)
-            convergence, residual = structure.check_nr_convergence()
-            if convergence:
-                print(f"NR converged with {i} iteration(s). Residual = {residual}")
-                break
+            for i in range(1, max_nr_iterations + 1):
+                convergence, residual = structure.solve_NR_iteration(max_ele_iterations)
+                if convergence:
+                    print(f"NR converged with {i} iteration(s). Residual = {residual}")
+                    break
+                if i == max_nr_iterations:
+                    io.warning(f"Newton-Raphson did not converge {max_nr_iterations} iterations")
+                    io.warning("FATAL ERROR: The solution is unstable")
+                    break
             if i == max_nr_iterations:
-                io.warning(f"Newton-Raphson did not converge {max_nr_iterations} iterations")
-                io.warning("FATAL ERROR: The solution is unstable")
                 break
 
-        structure.finalize_load_step()
-        # load.append(100 * structure.converged_load_factor)
-        # disp.append(1.0 / 10000 * 3 * structure.converged_controled_dof)
-        load.append(structure.get_force((1, "y")))
-        disp.append(-1.0/40 * structure.get_dof_value((2, "y")))
+            structure.finalize_load_step()
 
-        # fiber = structure.get_element(1).get_section(1).get_fiber(279)
-        # stresses.append(fiber.stress)
-        # strains.append(fiber.strain)
-
-        if PLOT_FLAG:
-            p.update_plot(axes, line, disp, load)
+            displacements = structure.get_displacements()
+            loads = structure.get_forces()
+            for disp in displacements:
+                wfile.write(str(disp)+" ")
+            for load in loads:
+                wfile.write(str(load)+" ")
+            wfile.write("\n")
 
     print("\n:: Finished solution loop ::")
-    if PLOT_FLAG and not SAVE_PLOT:
-        p.keep_plot()
-    if PLOT_FLAG and SAVE_PLOT:
-        fig.savefig("moment_curvature.png")
-
-    return disp, load, stresses, strains
 
 
 if __name__ == "__main__":
-    PLOT_FLAG = True
-    SAVE_PLOT = False
     STEP = 0.4
     STEPS = calculate_loadsteps(STEP)
+    STRUCTURE = model4()
+    # p.plot_disctrized_2d(STRUCTURE.get_element(1).get_section(1))
 
-    stru = model1c()
-    p.plot_disctrized_2d(stru.get_element(1))
-    d, l, sig, eps = solution_loop(stru, "-o", color="blue", mfc="none")
-    # p.custom_2d_plot(eps, sig, "blue")
+    # concr = []
+    # steel = []
+    # for fiber in STRUCTURE.get_element(1).get_section(1).fibers:
+    #     if isinstance(fiber._material, KentPark):
+    #         concr.append([-fiber.direction[0], fiber.direction[1], fiber.area])
+    # for fiber in STRUCTURE.get_element(1).get_section(1).fibers:
+    #     if isinstance(fiber._material, MenegottoPinto):
+    #         steel.append([-fiber.direction[0], fiber.direction[1], fiber.area])
+
+    # print("CONC")
+    # for fiber in concr:
+    #     print(f"{fiber}")
+    # print("\nSTEE")
+    # for fiber in steel:
+    #     print(f"{fiber}")
+    solution_loop(STRUCTURE)
+
+    import matplotlib.pyplot as plt
+    data = np.loadtxt("results.dat", usecols=(8, 14))
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.plot(data[:,0], -data[:,1])
+    ax.grid()
+    plt.show()

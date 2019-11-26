@@ -18,8 +18,6 @@ class Section:
         position based on Gauss-Lobatto rule
     weight : float
         weight based on Gauss-Lobatto rule
-    residual : ndarray
-        norm of the unbalance forces
     """
 
     def __init__(self, section_id):
@@ -30,17 +28,14 @@ class Section:
         self.position = None
         self.weight = None
 
-        self.stiffness_matrix = np.zeros((3, 3))
-
-        self._chng_def_increment = np.zeros(3)
-        self._chng_force_increment = np.zeros(3)
-        self._deformation_increment = np.zeros(3)
+        self._residual = np.zeros(3)
         self._force_increment = np.zeros(3)
-        self._converged_section_forces = np.zeros(3)
         self._forces = np.zeros(3)
+        self._converged_section_forces = np.zeros(3)
         self._unbalance_forces = np.zeros(3)
-        self.residual = np.zeros(3)
-        self._b_matrix = None
+
+        self._flexibility_matrix = np.zeros((3, 3))
+        self._b_matrix = np.zeros((3, 5))
 
     @property
     def id(self):
@@ -60,13 +55,6 @@ class Section:
         """fibers list"""
         return self._fibers.values()
 
-    @property
-    def b_matrix(self):
-        """ b_matrix """
-        if self._b_matrix is None:
-            self._b_matrix = _calculate_b_matrix(self.position)
-        return self._b_matrix
-
     def add_fiber(self, fiber_id, y, z, area, material_class, w, h):
         """add a fiber to the section
 
@@ -84,79 +72,76 @@ class Section:
             material model
         """
         if not isinstance(material_class, UniaxialIncrementalMaterial):
-            raise ValueError("material_class is not of type : Material")
+            raise ValueError("material_class is not of type : UniaxialIncrementalMaterial")
+        if fiber_id in self._fibers:
+            raise RuntimeError(f"Section already contains fiber with id {fiber_id}")
         self._fibers[fiber_id] = Fiber(fiber_id, y, z, area, material_class, w, h)
 
     def get_fiber(self, fiber_id):
         return self._fibers[fiber_id]
 
+
+    ####################################################################################
+
+
     def initialize(self):
         """initialize stiffness matrix"""
-        self.update_stiffness_matrix()
+        self._calculate_b_matrix()
+        self._update_flexibility_matrix()
 
-    def update_stiffness_matrix(self):
-        """ section stiffness matrix """
-        self.stiffness_matrix.fill(0.0)
-        for fiber in self.fibers:
-            EA = fiber.tangent_stiffness * fiber.area
-            self.stiffness_matrix += EA * fiber.direction_matrix
+    def get_global_flexibility_matrix(self):
+        return self._b_matrix.T @ self._flexibility_matrix @ self._b_matrix
 
-    def calculate_force_increment_from_element(self, ele_chng_force_increment):
-        """ step 8 """
-        b_matrix = self.b_matrix
-        self._chng_force_increment = b_matrix @ ele_chng_force_increment
-        self._force_increment += self._chng_force_increment
+    def get_global_residuals(self):
+        return self._b_matrix.T @ self._residual
 
-    def increment_section_forces(self):
-        """ step 8 """
+    def state_determination(self, ele_chng_force_increment):
+        #== step 8 ==#
+        chng_force_increment = self._b_matrix @ ele_chng_force_increment
+        self._force_increment += chng_force_increment
         self._forces = self._converged_section_forces + self._force_increment
-
-    def calculate_deformation_increment(self):
-        """ step 9 """
-        f_e = np.linalg.inv(self.stiffness_matrix)
-        self._chng_def_increment = self.residual + f_e @ self._chng_force_increment
-        self._deformation_increment += self._chng_def_increment
-
-    def calculate_fiber_deformation_increment(self):
-        """ step 10 """
-        rev = 0
+        #== step 9 ==#
+        chng_def_increment = self._residual + self._flexibility_matrix @ chng_force_increment
+        #== step 10 ==#
         for fiber in self.fibers:
-            reversal = fiber.calculate_strain_increment_from_section(self._chng_def_increment)
-            rev += reversal
-            fiber.increment_strain()
-            fiber.calculate_stress()
-        return rev
-
-    def check_convergence(self):
-        """ steps 13-15 """
-        return abs(np.linalg.norm(self._unbalance_forces)) < self._tolerance
-
-    def calculate_residuals(self):
-        """
-        residuals (norm of the unbalance forces)
-        """
+            fiber.state_determination(chng_def_increment)
+        #== step 11 ==#
+        self._update_flexibility_matrix()
+        #== step 12 ==#
         resisting_forces = np.zeros(3)
         for fiber in self.fibers:
             resisting_forces += fiber.stress * fiber.area * fiber.direction
         self._unbalance_forces = self._forces - resisting_forces
-        self.residual = np.linalg.solve(self.stiffness_matrix, self._unbalance_forces)
+        self._residual = self._flexibility_matrix @ self._unbalance_forces
+        return abs(np.linalg.norm(self._unbalance_forces)) < self._tolerance
+
+    def reset_residual(self):
+        self._residual.fill(0.0)
 
     def finalize_load_step(self):
         """
         finalize for next load step
         """
         self._converged_section_forces = self._forces
-        self._deformation_increment.fill(0.0)
         self._force_increment.fill(0.0)
         for fiber in self.fibers:
             fiber.finalize_load_step()
 
 
-def _calculate_b_matrix(gauss_point):
-    b_matrix = np.zeros([3, 5])
-    b_matrix[0, 0] = gauss_point / 2 - 1 / 2
-    b_matrix[0, 1] = gauss_point / 2 + 1 / 2
-    b_matrix[1, 2] = gauss_point / 2 - 1 / 2
-    b_matrix[1, 3] = gauss_point / 2 + 1 / 2
-    b_matrix[2, 4] = 1
-    return b_matrix
+    ####################################################################################
+
+
+    def _update_flexibility_matrix(self):
+        """ section stiffness matrix """
+        stiffness_matrix = np.zeros((3, 3))
+        for fiber in self.fibers:
+            EA = fiber.tangent_stiffness * fiber.area
+            stiffness_matrix += EA * fiber.direction_matrix
+        self._flexibility_matrix = np.linalg.inv(stiffness_matrix)
+
+    def _calculate_b_matrix(self):
+        self._b_matrix[0, 0] = self.position / 2 - 1 / 2
+        self._b_matrix[0, 1] = self.position / 2 + 1 / 2
+        self._b_matrix[1, 2] = self.position / 2 - 1 / 2
+        self._b_matrix[1, 3] = self.position / 2 + 1 / 2
+        self._b_matrix[2, 4] = 1

@@ -2,10 +2,10 @@
 Module contains only KentPark class
 """
 
-from .material import Material
+# from .material import Material
 
 
-class KentPark(Material):
+class KentPark:
     """
     Concrete uniaxial material law
 

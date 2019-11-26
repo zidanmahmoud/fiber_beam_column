@@ -42,7 +42,6 @@ class Fiber:
         self.w = w
         self.h = h
 
-        self._chng_strain_increment = 0.0
         self._strain_increment = 0.0
         self.converged_strain = 0.0
         self.strain = 0.0
@@ -61,26 +60,12 @@ class Fiber:
         """
         return self._material.tangent_modulus
 
-    def calculate_strain_increment_from_section(self, sec_chng_def_increment):
+    def state_determination(self, sec_chng_def_increment):
         """ step 10 + 11 """
-        self._chng_strain_increment = self.direction @ sec_chng_def_increment
-        self._strain_increment += self._chng_strain_increment
+        chng_strain_increment = self.direction @ sec_chng_def_increment
+        self._strain_increment += chng_strain_increment
         self.strain = self.converged_strain + self._strain_increment
-        rev = self._material.update_strain(self.strain)
-        # if rev:
-        #     self._material.reverse()
-        # self._material.calculate_stress_and_tangent_modulus()
-        return rev
-
-    def reverse_material(self):
-        self._material.reverse()
-
-    def increment_strain(self):
-        """ step 10 """
-        pass
-
-    def calculate_stress(self):
-        """ step 11 """
+        self._material.update_strain(self.strain)
         self.stress = self._material.stress
 
     def finalize_load_step(self):

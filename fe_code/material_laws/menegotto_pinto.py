@@ -60,7 +60,7 @@ class MenegottoPinto(UniaxialIncrementalMaterial):
 
         # Converged Variables
         self._c_loading_index = 0
-        self._c_Et = E
+        # self._c_Et = E
         self._c_strain_0 = 0.0
         self._c_stress_0 = 0.0
         self._c_strain_r = 0.0
@@ -134,9 +134,9 @@ class MenegottoPinto(UniaxialIncrementalMaterial):
         if self._loading_index == 0 or self._loading_index == 3:
 
             if abs(deps) < 1e-15:  # nearly zero
-                self._Et = E
-                self._stress = 0.0
-                self._loading_index = 3
+                # self._Et = E
+                # self._stress = 0.0
+                # self._loading_index = 3
                 return False
 
             else:
@@ -201,7 +201,7 @@ class MenegottoPinto(UniaxialIncrementalMaterial):
         whole structure is converged at the load step
         """
         self._c_loading_index = self._loading_index
-        self._c_Et = self._Et
+        # self._c_Et = self._Et
         self._c_strain_0 = self._strain_0
         self._c_stress_0 = self._stress_0
         self._c_strain_r = self._strain_r

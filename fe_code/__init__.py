@@ -11,6 +11,9 @@ from .material_laws import MenegottoPinto, KentPark
 if sys.version_info < (3, 6):
     raise RuntimeError("The fiber beam-column module requires at least Python 3.6!")
 
+import numpy as np
+np.set_printoptions(precision=4, suppress=True, linewidth=1000)
+
 MSG = "  ______ _____ ____  ______ _____\n"
 MSG += " |  ____|_   _|  _ \\|  ____|  __ \\ \n"
 MSG += " | |__    | | | |_) | |__  | |__) |\n"

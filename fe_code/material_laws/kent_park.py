@@ -105,46 +105,50 @@ class KentPark(UniaxialIncrementalMaterial):
 
     def _set_trial_state(self, new_strain):
         reversal = False
+        self._strain = new_strain
+
         self._strain_min = self._c_strain_min
         self._strain_end = self._c_strain_end
         self._unload_slope = self._c_unload_slope
         self._stress = self._c_stress
         self._Et = self._c_Et
-        self._strain = self._c_strain
 
-        deps = new_strain - self._c_strain
+        deps = self._strain - self._c_strain
         if abs(deps) < 1e-15:
             return reversal
 
-        self._strain = new_strain
         if self._strain > 0.0:
             self._stress = 0.0
             self._Et = 0.0
             return reversal
 
-        self._unload_slope = self._c_unload_slope
+        # self._unload_slope = self._c_unload_slope
 
         stress_temp = (
             self._c_stress + self._unload_slope * self._strain - self._unload_slope * self._c_strain
         )
         # further into compression
         if self._strain < self._c_strain:
-            self._strain_min = self._c_strain_min
-            self._strain_end = self._c_strain_end
             self._reload()
             if stress_temp > self._stress:
                 self._stress = stress_temp
                 self._Et = self._unload_slope
         # towards tension
-        elif stress_temp <= 0.0:
-            if self._c_strain == self._strain_min:
-                reversal = True
-            self._stress = stress_temp
-            self._Et = self._unload_slope
-        # further into tension
-        else:
+        elif self._strain > self._strain_end:
             self._stress = 0.0
             self._Et = 0.0
+        else:
+            self._stress = self._c_stress + self._unload_slope * (self._strain - self._c_strain)
+            self._Et = self._unload_slope
+        # elif stress_temp <= 0.0:
+        #     if self._c_strain == self._strain_min:
+        #         reversal = True
+        #     self._stress = stress_temp
+        #     self._Et = self._unload_slope
+        # # further into tension
+        # else:
+        #     self._stress = 0.0
+        #     self._Et = 0.0
 
         return reversal
 
@@ -178,18 +182,20 @@ class KentPark(UniaxialIncrementalMaterial):
         strain_temp = self._strain_min
         if strain_temp < self._strain_u:
             strain_temp = self._strain_u
-        eta = strain_temp / self._strain_0
+        eta = self._strain_min / self._strain_0
         ratio = 0.707 * (eta - 2.0) + 0.834
         if eta < 2:
             ratio = 0.145 * eta * eta + 0.13 * eta
         self._strain_end = ratio * self._strain_0
+
+        # self._unload_slope = self._stress / (self._strain_min - self._strain_end)
 
         temp1 = self._strain_min - self._strain_end
         E0 = 2 * self._fc / self._strain_0
         temp2 = self._stress / E0
         if temp1 > -1e-15:
             self._unload_slope = E0
-        elif temp1 <= temp2:
+        if temp1 <= temp2:
             self._strain_end = self._strain_min - temp1
             self._unload_slope = self._stress / temp1
         else:

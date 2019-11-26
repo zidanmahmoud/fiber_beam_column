@@ -91,6 +91,7 @@ class KentPark:
 
     def _set_trial_state(self):
         deps = self._strain - self._c_strain
+        # print(f"deps : {deps}")
         if abs(deps) < 1e-15:  # nearly zero
             self._loading_index = 3
         else:
@@ -98,7 +99,10 @@ class KentPark:
                 self._loading_index = 2
             else:
                 self._loading_index = 1
+
+        # print(f"loadingIndex : {self._loading_index}")
         reversal = self._check_reversal()
+        # print(f"reversal : {reversal}")
         if reversal:
             self._reverse()
 
@@ -125,6 +129,7 @@ class KentPark:
             return
         self._strain_r = self._c_strain
         self._stress_r = self._c_stress
+        # print(f"strainR : {self._strain_r}")
 
         crit = self._strain_r / self._strain_0
         ep0 = self._strain_0
@@ -132,6 +137,7 @@ class KentPark:
             self._strain_p = ep0 * (0.707 * (crit - 2) + 0.834)
         elif crit < 2:
             self._strain_p = ep0 * (0.145 * crit ** 2 + 0.13 * crit)
+        # print(f"strainP = {self._strain_p}")
 
     def calculate_stress_and_tangent_modulus(self):
         eps = self._strain
@@ -182,6 +188,7 @@ class KentPark:
                 self._Et = 0.0
                 return
             stress = -(sgr * eps - epp * sgr) / (epr - epp)
+            print(f"stress : {stress}")
             tangen = -sgr / (epr - epp)
 
         self._stress = -1 * stress
@@ -203,42 +210,43 @@ fiber = KentPark(
     # eu=0.0037,
     e0=0.0027,
 )
-fiber2 = KentPark(
-    fc=6.95,
-    confined=0,
-    Z=770,
-    # eu=0.0037,
-    e0=0.0027,
-)
+# fiber2 = KentPark(
+#     fc=6.95,
+#     confined=0,
+#     Z=770,
+#     # eu=0.0037,
+#     e0=0.0027,
+# )
 
 fig = plt.figure()
 ax = fig.add_subplot(111)
-strains = np.concatenate(
-    (
-        # np.linspace(0, -0.0025, num=100),
-        # np.linspace(-0.0024, -0.001, num=100),
-        # np.linspace(-0.0011, -0.003, num=100),
-        # np.linspace(-0.0031, 0, num=100),
-        # np.linspace(0, -0.009, num=100),
-        # np.linspace(-0.009, 0, num=100),
-        np.linspace(0, -0.01, num=100),
-    )
-)
+# strains = np.concatenate(
+#     (
+#         np.linspace(0, -0.0025, num=100),
+#         np.linspace(-0.0024, -0.001, num=100),
+#         np.linspace(-0.0011, -0.003, num=100),
+#         np.linspace(-0.0031, 0, num=100),
+#         np.linspace(0, -0.009, num=100),
+#         np.linspace(-0.009, 0, num=100),
+#         np.linspace(0, -0.01, num=100),
+#     )
+# )
+strains = np.concatenate((np.linspace(0, -0.004, num=50), np.linspace(-0.004, 0.001, num=50), np.linspace(0, -0.009, num=50), np.linspace(-0.009, 0, num=50), np.linspace(0, -0.01, num=50)))
 
 stresses = list()
-stresses2 = list()
+# stresses2 = list()
 for i, strain in enumerate(strains):
     fiber.update_strain(strain)
     fiber.calculate_stress_and_tangent_modulus()
     fiber.finalize()
     stresses.append(fiber.stress)
-    fiber2.update_strain(strain)
-    fiber2.calculate_stress_and_tangent_modulus()
-    fiber2.finalize()
-    stresses2.append(fiber2.stress)
+    # fiber2.update_strain(strain)
+    # fiber2.calculate_stress_and_tangent_modulus()
+    # fiber2.finalize()
+    # stresses2.append(fiber2.stress)
 
 line, = ax.plot(strains, stresses, "o-", color="black", mfc="none", label="unconfined")
-line2, = ax.plot(strains, stresses2, "*-", color="blue", mfc="none", label="unconfined")
+# line2, = ax.plot(strains, stresses2, "*-", color="blue", mfc="none", label="unconfined")
 ax.invert_yaxis()
 ax.invert_xaxis()
 ax.grid()
@@ -249,8 +257,9 @@ ax.set(xlabel="CONCRETE STRAIN", ylabel="CONCRETE STRESS")
 
 def update(frame):
     line.set_data(strains[:frame], stresses[:frame])
-    line2.set_data(strains[:frame], stresses2[:frame])
-    return (line, line2)
+    # line2.set_data(strains[:frame], stresses2[:frame])
+    # return (line, line2)
+    return line,
 
 
 ani = ani.FuncAnimation(fig, update, len(strains), interval=25, blit=True)

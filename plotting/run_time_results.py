@@ -1,21 +1,18 @@
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.ticker import MultipleLocator, AutoMinorLocator
 
 
 def initiate_plot(*args, **kwargs):
     """ setup the plot """
     fig = plt.figure()
     axes = fig.add_subplot(111)
-    axes.set(title="Moment-Curvature Plot", xlabel="Curvature [rad/in]", ylabel="Moment [kip*in]")
+    axes.set(title="Moment - Curvature", xlabel="Rotation [micro rad/in]", ylabel="Moment [kip-in]")
     axes.plot(0, 0, "yo")
     line, = axes.plot(0, 0, *args, **kwargs)
-    # axes.set(
-    #     xlim=[-0.002, 0.002],
-    #     ylim=[-160, 160],
-    #     xticks=[-0.002, -0.001, 0, 0.001, 0.002],
-    #     yticks=[-160, -120, -80, -40, 0, 40, 80, 120, 160],
-    # )
-    axes.grid(True)
+    # axes.xaxis.set_major_locator(MultipleLocator(100))
+    axes.xaxis.set_minor_locator(AutoMinorLocator(2))
+    axes.grid(True, which="both")
     return fig, axes, line
 
 
