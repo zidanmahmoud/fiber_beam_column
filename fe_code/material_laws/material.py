@@ -1,11 +1,11 @@
 """
-Module contains the class Material
+Module contains the abstract class Material
 """
 
 from abc import ABC, abstractclassmethod
 
 
-class Material(ABC):
+class UniaxialIncrementalMaterial(ABC):
     """
     Material abstract class to be used in fiber-beam-column element
     """
@@ -15,15 +15,7 @@ class Material(ABC):
         pass
 
     @abstractclassmethod
-    def check_reversal(self):
-        pass
-
-    @abstractclassmethod
-    def reverse(self):
-        pass
-
-    @abstractclassmethod
-    def calculate_stress_and_tangent_modulus(self):
+    def _set_trial_state(self, new_strain):
         pass
 
     @abstractclassmethod

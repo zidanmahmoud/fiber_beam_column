@@ -1,12 +1,37 @@
 """
-test file
+Module contains only MenegottoPinto class
 """
 
-import numpy as np
-import matplotlib.pyplot as plt
+from .material import Material
 
 
-class MenegottoPinto:
+class MenegottoPinto(Material):
+    """
+    Steel uniaxial material law
+
+    Parameters
+    ----------
+    E : float
+        Young's Modulus
+    b : flaot
+        hardening ratio
+    fy : float
+        yield strength
+    R : float
+        initial transition variable
+    a1 : float
+        imperical parameter
+    a2 : float
+        imperical parameter
+
+
+    Attributes
+    ----------
+    tangent_modulus : float
+    stress : float
+    strain : float
+    """
+
     def __init__(self, E, b, fy, R, a1, a2):
         self._E = E
         self._Et = E
@@ -46,23 +71,35 @@ class MenegottoPinto:
 
     @property
     def tangent_modulus(self):
+        """ current tangent modulus """
         return self._Et
 
     @property
     def stress(self):
+        """ current stress """
         return self._stress
 
     @property
     def strain(self):
+        """ current strain """
         return self._strain
 
-    def update_strain(self, value):
+    def update_strain(self, fiber_strain):
         """
-        FIXME
+        set new strain and test for reversal
+
+        Parameters
+        ----------
+        fiber_strain : float
+            fiber strain
+
+        Returns
+        -------
+        reversal : bool
+            flag True if reversed
         """
-        self._strain = value
-        reversal = self._set_trial_state()
-        return reversal
+        self._strain = fiber_strain
+        return self._set_trial_state()
 
     def _set_trial_state(self):
         deps = self._strain - self._c_strain
@@ -80,12 +117,16 @@ class MenegottoPinto:
                     self._loading_index = 1
                     self._strain_0 = self._fy / self._E
                     self._stress_0 = self._fy
-        reversal = self._check_reversal()
+        reversal = self.check_reversal()
         if reversal:
-            self._reverse()
+            self.reverse()
+        self.calculate_stress_and_tangent_modulus()
         return reversal
 
-    def _check_reversal(self):
+    def check_reversal(self):
+        """
+        check for reversal
+        """
         deps = self._strain - self._c_strain
         if self._loading_index == 2 and deps > 0:
             self._loading_index = 1
@@ -95,7 +136,10 @@ class MenegottoPinto:
             return True
         return False
 
-    def _reverse(self):
+    def reverse(self):
+        """
+        reverse the material parameters
+        """
         self._last_strain_r = self._strain_r
         self._last_stress_r = self._stress_r
         self._strain_r = self._c_strain
@@ -109,19 +153,18 @@ class MenegottoPinto:
         else:
             sgy = -self._fy
         lepr = self._last_strain_r
-        self._strain_0 = (E * epr - sgr + sgy * (1 - b)) / (E * (1 - b))
+        self._strain_0 = (E * epr - sgr + sgy * (1 - b)) / (
+            E * (1 - b)
+        )  # FIXME: if eps0 == epsr: eps_star = inf
         self._stress_0 = b * E * self._strain_0 + sgy * (1 - b)
         eps_intersect = ((sgr - lepr) + E * b * lepr - E * epr) / (E * (b - 1))
-        self._xi = abs(eps_intersect - lepr) # shouldn't this be divided by eps_y??
+        self._xi = abs(eps_intersect - lepr)
         self._R = self._R0 - self._a1 * self._xi / (self._a2 + self._xi)
-
-        # global ax
-        # ax.plot(self._strain_0, self._stress_0, "-o", color="black")
-        # ax.plot(self._strain_r, self._stress_r, "-o", color="black", markerfacecolor="none")
 
     def calculate_stress_and_tangent_modulus(self):
         """
-        FIXME
+        update the current stress and tangent modulus
+        based on the current strain
         """
         b = self._b
         eps = self._strain
@@ -139,7 +182,11 @@ class MenegottoPinto:
         self._Et = b + (1 - b) / (dum1 * dum2)
         self._Et *= (sg0 - sgr) / (ep0 - epr)
 
-    def finalize(self):
+    def finalize_load_step(self):
+        """
+        update the converged variables. Called when the
+        whole structure is converged at the load step
+        """
         self._c_loading_index = self._loading_index
         self._c_Et = self._Et
         self._c_strain_0 = self._strain_0
@@ -149,38 +196,3 @@ class MenegottoPinto:
         self._c_strain = self._strain
         self._c_stress = self._stress
         self._c_xi = self._xi
-
-
-fiber = MenegottoPinto(E=29000, b=0.08, fy=60, R=15, a1=8.5, a2=0.0002)  # 0.0042  # 20
-
-
-fig = plt.figure()
-ax = fig.add_subplot(111)
-ax.plot(fiber._strain_0, fiber._stress_0, "-o", color="black")
-
-strains = np.concatenate(
-    (np.linspace(0.000, 0.005), np.linspace(0.0049, -0.01), np.linspace(-0.009, -0.0005))
-)
-f = np.linspace(0, strains.size - 1, strains.size, dtype=int)
-nf = []
-
-# strains = np.array([0, 0.001, 0.002, 0.0035, 0.0015, 0.0031, 0.003, 0.004, 0.005])
-# f = [0, 1, 2, 6, 7, 8]
-# nf = [3, 4, 5]
-stresses = []
-for i, strain in enumerate(strains):
-    reversal = fiber.update_strain(strain)
-    fiber.calculate_stress_and_tangent_modulus()
-    if i in f:
-        fiber.finalize()
-    stresses.append(fiber.stress)
-    if reversal:
-        print(fiber._stress_0)
-stresses = np.array(stresses)
-ax.plot(strains[f], stresses[f], "-o", color="black", markerfacecolor="none")
-ax.plot(strains[nf], stresses[nf], "o", color="orange")
-ax.grid()
-ax.axhline(linewidth=3, color="black")
-ax.axvline(linewidth=3, color="black")
-ax.set(xlabel="STEEL STRAIN", ylabel="STEEL STRESS")
-plt.show()
