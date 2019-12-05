@@ -60,8 +60,8 @@ class Structure:
         self.controlled_dof_increment = 0.0
 
         # initialized as None because the number of dofs is not yet determined
-        self._resisting_forces = None
         self._stiffness_matrix = None
+        self._resisting_forces = None
         self._unbalanced_forces = None
         self._displacement_increment = None
         self._displacement = None

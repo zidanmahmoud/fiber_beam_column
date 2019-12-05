@@ -33,13 +33,10 @@ class KentPark(UniaxialIncrementalMaterial):
     strain : float
     """
 
-    def __init__(self, fc, K, Z, e0=0.002):
-        K = 1
-        self._K = K
+    def __init__(self, fc, Z, e0=0.002):
 
         self._fc = fc
-        self._strain_0 = K * e0
-        self._Z = abs(Z)
+        self._strain_0 = e0
         self._strain_u = -(0.8 / abs(Z) + abs(e0))
 
         if self._fc > 0:
@@ -63,13 +60,13 @@ class KentPark(UniaxialIncrementalMaterial):
         self._c_Et = Et0
 
     @classmethod
-    def eu(cls, fc, K, eu, e0=0.002):
+    def eu(cls, fc, eu, e0=0.002):
         """
         Overloading the default constructor with eu
         instead of Z
         """
         Z = 0.8 / (eu - e0)
-        return cls(fc, K, Z, e0)
+        return cls(fc, Z, e0)
 
     @property
     def tangent_modulus(self):
@@ -134,12 +131,12 @@ class KentPark(UniaxialIncrementalMaterial):
                 self._stress = stress_temp
                 self._Et = self._unload_slope
         # towards tension
-        elif self._strain > self._strain_end:
-            self._stress = 0.0
-            self._Et = 0.0
-        else:
+        elif self._strain < self._strain_end:
             self._stress = self._c_stress + self._unload_slope * (self._strain - self._c_strain)
             self._Et = self._unload_slope
+        else:
+            self._stress = 0.0
+            self._Et = 0.0
         # elif stress_temp <= 0.0:
         #     if self._c_strain == self._strain_min:
         #         reversal = True

@@ -29,11 +29,11 @@ import matplotlib.pyplot as plt
 # 22:  mom_y_2
 # 23:  mom_z_2
 
-
-data03 = np.loadtxt("results_ex1_3sections_0_4.dat", usecols=(10, 16), max_rows=9)
-data06 = np.loadtxt("results_ex1_6sections_0_01.dat", usecols=(10, 16), max_rows=360)
-data10 = np.loadtxt("results_ex1_10sections_0_01.dat", usecols=(10, 16), max_rows=360)
-data20 = np.loadtxt("results_ex1_20sections_0_004.dat", usecols=(10, 16), max_rows=900)
+# dataEX = np.loadtxt("ex1exper.csv", delimiter=",", skiprows=1)
+data03 = np.loadtxt("results_ex1_3sections_0_4.dat", usecols=(10, 16))
+data06 = np.loadtxt("results_ex1_6sections_0_01.dat", usecols=(10, 16))
+data10 = np.loadtxt("results_ex1_10sections_0_01.dat", usecols=(10, 16))
+data20 = np.loadtxt("results_ex1_20sections_0_004.dat", usecols=(10, 16))
 
 colors = {
 	"TUM_blue1" : (0/255., 82/255., 147/255.),
@@ -50,6 +50,7 @@ colors = {
 
 fig = plt.figure()
 ax = fig.add_subplot(111)
+# ax.plot(dataEX[:,0], dataEX[:,1], "--", color="black", label="Experiment")
 ax.plot(-data03[:,0]*1e6/40, data03[:,1], "--", color=colors["TUM_grey2"], label="3 sections")
 ax.plot(-data06[:,0]*1e6/40, data06[:,1], ":",  color=colors["TUM_orange"], label="6 sections")
 ax.plot(-data10[:,0]*1e6/40, data10[:,1], "-*",  color=colors["TUM_green"], label="10 sections", markevery=20)

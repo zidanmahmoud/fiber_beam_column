@@ -4,7 +4,7 @@ from math import sqrt, pi
 from fe_code import io, Structure, MenegottoPinto, KentPark
 
 
-def model1():
+def model1_1():
     """ initiate the structural model """
 
     length = 100
@@ -45,9 +45,6 @@ def model1():
             for j in range(no_fibers_z):
                 # z = height / no_fibers_z * (j + 0.5)
                 z = 0.5 * (h - height) + j * h
-                # section.add_fiber(
-                #         counter, y, z, fiber_area, KentPark(6.95, 1, 770, 0.0027), w, h
-                #     )
                 if i in (1, no_fibers_y-2) and j in (1, no_fibers_z-2):
                     section.add_fiber(
                         counter,
@@ -60,7 +57,7 @@ def model1():
                     )
                 else:
                     section.add_fiber(
-                        counter, y, z, fiber_area, KentPark(6.95, 1, 770, 0.0027), w, h
+                        counter, y, z, fiber_area, KentPark(6.95, 770, 0.0027), w, h
                     )
                 counter += 1
     print(f"Added {counter - 1} fibers.")
@@ -70,7 +67,7 @@ def model1():
     stru.set_section_tolerance(1e-6)
 
     # BOUNDARY CONDITIONS
-    stru.set_controlled_dof_dof(2, "w")
+    stru.set_controlled_dof(2, "w")
     stru.add_dirichlet_condition(1, "uvwxyz", 0)
     stru.add_dirichlet_condition(2, "vxz", 0)
     stru.add_neumann_condition(2, "w", 1.0)
@@ -79,8 +76,9 @@ def model1():
     return stru
 
 
-def model1c():
-    """ initiate the structural model """
+def model1_c():
+    """ needs FIX
+    initiate the structural model """
 
     length = 100
     width = 5
@@ -130,7 +128,7 @@ def model1c():
                     )
                 else:
                     section.add_fiber(
-                        counter, y, z, fiber_area, KentPark(6.95, 1, 770, 0.0027), w, h
+                        counter, y, z, fiber_area, KentPark(6.95, 770, 0.0027), w, h
                     )
                 counter += 1
     print(f"Added {counter - 1} fibers.")
@@ -140,88 +138,16 @@ def model1c():
     stru.set_section_tolerance(0.05)
 
     # BOUNDARY CONDITIONS
-    stru.set_controlled_dof_dof(2, "u")
+    stru.set_controlled_dof(2, "u")
     stru.add_dirichlet_condition(1, "uvwxyz", 0)
     stru.add_dirichlet_condition(2, "vxz", 0)
+    stru.add_neumann_condition(2, "w", 1.0)
     print("Added the boundary conditions.")
 
     return stru
 
 
-def model2():
-    """ initiate the structural model """
-
-    length = 100
-    width = 5
-    height = 8
-
-    no_fibers_y = 15
-    no_fibers_z = 20
-    no_sections = 4
-
-    # STRUCTURE INITIALIZATION
-    stru = Structure()
-    print("Constructed an empty stucture.")
-
-    # NODES
-    stru.add_node(1, 0.0, 0.0, 0.0)
-    stru.add_node(2, length, 0.0, 0.0)
-    print(f"Added {len(stru.nodes)} nodes.")
-
-    # ELEMENTS
-    stru.add_fiber_beam_element(1, 1, 2)
-    print(f"Added {len(stru.elements)} elements.")
-
-    # SECTIONS
-    for i in range(no_sections):
-        stru.get_element(1).add_section(i + 1)
-    print(f"Added {sum([len(element.sections) for element in stru.elements])} sections.")
-
-    # FIBERS
-    w = width / no_fibers_y
-    h = height / no_fibers_z
-    fiber_area = w * h
-    counter = 1
-    for section in stru.get_element(1).sections:
-        for i in range(no_fibers_y):
-            y = width * (-0.5 + (i + 0.5) / no_fibers_y)
-            for j in range(no_fibers_z):
-                z = height * (-0.5 + (j + 0.5) / no_fibers_z)
-                if i in (1, 13) and j in (1, 18):
-                    section.add_fiber(
-                        counter,
-                        y,
-                        z,
-                        fiber_area,
-                        MenegottoPinto(29000, 0.0042, 48.4, 20, 18.5, 0.0002),
-                        w,
-                        h,
-                    )
-                elif i < 1 or i > 13 or j < 1 or j > 18:
-                    section.add_fiber(
-                        counter, y, z, fiber_area, KentPark.eu(6.95, 1, 0.00292, 0.0027), w, h
-                    )
-                else:
-                    section.add_fiber(
-                        counter, y, z, fiber_area, KentPark.eu(6.95, 1.0763, 0.03810, 0.0027), w, h
-                    )
-                counter += 1
-    print(f"Added {counter - 1} fibers.")
-
-    # CONVERGENCE TOLERANCE VALUES
-    stru.tolerance = 0.05
-    stru.set_section_tolerance(0.05)
-
-    # BOUNDARY CONDITIONS
-    stru.set_controlled_dof_dof(2, "w")
-    stru.add_dirichlet_condition(1, "uvwxyz", 0)
-    stru.add_dirichlet_condition(2, "x", 0)
-    print("Added the boundary conditions.")
-
-    return stru
-
-
-def model3():
+def model1_2():
     """ initiate the structural model """
 
     length = 100
@@ -267,7 +193,7 @@ def model3():
     zs = np.repeat(np.linspace(-z, z, no_z), no_y)
     for section in stru.get_element(1).sections:
         for y, z in zip(ys, zs):
-            section.add_fiber(counter, y, z, area, KentPark.eu(6.95, 1, 0.03810, 0.0027), w, h)
+            section.add_fiber(counter, y, z, area, KentPark.eu(6.95, 0.03810, 0.0027), w, h)
             counter += 1
 
     # == unconfined sides
@@ -281,7 +207,7 @@ def model3():
     zs = np.repeat(np.linspace(-z, z, 10), 2)
     for section in stru.get_element(1).sections:
         for y, z in zip(ys, zs):
-            section.add_fiber(counter, y, z, area, KentPark.eu(6.95, 1, 0.00292, 0.0027), w, h)
+            section.add_fiber(counter, y, z, area, KentPark.eu(6.95, 0.00292, 0.0027), w, h)
             counter += 1
 
     # == unconfined bottom
@@ -295,7 +221,7 @@ def model3():
     zs = np.repeat(np.linspace(-zmin, -zmax, 4), 2)
     for section in stru.get_element(1).sections:
         for y, z in zip(ys, zs):
-            section.add_fiber(counter, y, z, area, KentPark.eu(6.95, 1, 0.00292, 0.0027), w, h)
+            section.add_fiber(counter, y, z, area, KentPark.eu(6.95, 0.00292, 0.0027), w, h)
             counter += 1
 
     # == unconfined top
@@ -303,7 +229,7 @@ def model3():
     zs = np.repeat(np.linspace(zmin, zmax, 4), 2)
     for section in stru.get_element(1).sections:
         for y, z in zip(ys, zs):
-            section.add_fiber(counter, y, z, area, KentPark.eu(6.95, 1, 0.00292, 0.0027), w, h)
+            section.add_fiber(counter, y, z, area, KentPark.eu(6.95, 0.00292, 0.0027), w, h)
             counter += 1
 
     # == steel
@@ -328,15 +254,16 @@ def model3():
     stru.set_section_tolerance(0.05)
 
     # BOUNDARY CONDITIONS
-    stru.set_controlled_dof_dof(2, "w")
+    stru.set_controlled_dof(2, "w")
     stru.add_dirichlet_condition(1, "uvwxyz", 0)
     stru.add_dirichlet_condition(2, "vxz", 0)
+    stru.add_neumann_condition(2, "w", 1.0)
     print("Added the boundary conditions.")
 
     return stru
 
 
-def model4():
+def model1_3():
     """ initiate the structural model """
 
     length = 100
@@ -396,7 +323,7 @@ def model4():
     w = spacing
     for section in stru.get_element(1).sections:
         for y in ys:
-            section.add_fiber(counter, y, -z, w*h, KentPark.eu(6.95, 1, 0.03810, 0.0027), w, h)
+            section.add_fiber(counter, y, -z, w*h, KentPark.eu(6.95, 0.03810, 0.0027), w, h)
             counter += 1
 
     # top steel
@@ -418,7 +345,7 @@ def model4():
     h = topBarsDia
     for section in stru.get_element(1).sections:
         for y in ys:
-            section.add_fiber(counter, y, z, w*h, KentPark.eu(6.95, 1, 0.03810, 0.0027), w, h)
+            section.add_fiber(counter, y, z, w*h, KentPark.eu(6.95, 0.03810, 0.0027), w, h)
             counter += 1
 
     # confined concrete
@@ -432,9 +359,9 @@ def model4():
     h = total/confinedConcrete
     for section in stru.get_element(1).sections:
         for z in zs:
-            section.add_fiber(counter, -y, z, w*h, KentPark.eu(6.95, 1, 0.03810, 0.0027), w, h)
+            section.add_fiber(counter, -y, z, w*h, KentPark.eu(6.95, 0.03810, 0.0027), w, h)
             counter += 1
-            section.add_fiber(counter, y, z, w*h, KentPark.eu(6.95, 1, 0.03810, 0.0027), w, h)
+            section.add_fiber(counter, y, z, w*h, KentPark.eu(6.95, 0.03810, 0.0027), w, h)
             counter += 1
 
     # sides concrete
@@ -448,9 +375,9 @@ def model4():
     h = total/sideConcrete
     for section in stru.get_element(1).sections:
         for z in zs:
-            section.add_fiber(counter, -y, z, w*h, KentPark.eu(6.95, 1, 0.03810, 0.0027), w, h)
+            section.add_fiber(counter, -y, z, w*h, KentPark.eu(6.95, 0.03810, 0.0027), w, h)
             counter += 1
-            section.add_fiber(counter, y, z, w*h, KentPark.eu(6.95, 1, 0.03810, 0.0027), w, h)
+            section.add_fiber(counter, y, z, w*h, KentPark.eu(6.95, 0.03810, 0.0027), w, h)
             counter += 1
 
     # top concrete
@@ -462,9 +389,9 @@ def model4():
     h = topCover/topConcrete
     for section in stru.get_element(1).sections:
         for z in zs:
-            section.add_fiber(counter, -y, z, w*h, KentPark.eu(6.95, 1, 0.03810, 0.0027), w, h)
+            section.add_fiber(counter, -y, z, w*h, KentPark.eu(6.95, 0.03810, 0.0027), w, h)
             counter += 1
-            section.add_fiber(counter, y, z, w*h, KentPark.eu(6.95, 1, 0.03810, 0.0027), w, h)
+            section.add_fiber(counter, y, z, w*h, KentPark.eu(6.95, 0.03810, 0.0027), w, h)
             counter += 1
 
     # bottom concrete
@@ -476,9 +403,9 @@ def model4():
     h = bottomCover/bottomConcrete
     for section in stru.get_element(1).sections:
         for z in zs:
-            section.add_fiber(counter, -y, z, w*h, KentPark.eu(6.95, 1, 0.03810, 0.0027), w, h)
+            section.add_fiber(counter, -y, z, w*h, KentPark.eu(6.95, 0.03810, 0.0027), w, h)
             counter += 1
-            section.add_fiber(counter, y, z, w*h, KentPark.eu(6.95, 1, 0.03810, 0.0027), w, h)
+            section.add_fiber(counter, y, z, w*h, KentPark.eu(6.95, 0.03810, 0.0027), w, h)
             counter += 1
 
     print(f"Added {counter - 1} fibers.")
@@ -497,7 +424,7 @@ def model4():
     return stru
 
 
-def model5():
+def model2():
     """ initiate the structural model """
 
     length = 71
@@ -559,7 +486,7 @@ def model5():
     w = spacing
     for section in stru.get_element(1).sections:
         for y in ys:
-            section.add_fiber(counter, y, z, w*h, KentPark.eu(5.43, 1, 0.069, 0.00214), w, h)
+            section.add_fiber(counter, y, z, w*h, KentPark.eu(5.43, 0.069, 0.00214), w, h)
             counter += 1
 
     # top steel
@@ -581,7 +508,7 @@ def model5():
     h = topBarsDia
     for section in stru.get_element(1).sections:
         for y in ys:
-            section.add_fiber(counter, y, -z, w*h, KentPark.eu(5.43, 1, 0.069, 0.00214), w, h)
+            section.add_fiber(counter, y, -z, w*h, KentPark.eu(5.43, 0.069, 0.00214), w, h)
             counter += 1
 
     # confined concrete
@@ -595,9 +522,9 @@ def model5():
     h = total/confinedConcrete
     for section in stru.get_element(1).sections:
         for z in zs:
-            section.add_fiber(counter, -y, -z, w*h, KentPark.eu(5.43, 1, 0.069, 0.00265), w, h)
+            section.add_fiber(counter, -y, -z, w*h, KentPark.eu(5.43, 0.069, 0.00265), w, h)
             counter += 1
-            section.add_fiber(counter, y, -z, w*h, KentPark.eu(5.43, 1, 0.069, 0.00265), w, h)
+            section.add_fiber(counter, y, -z, w*h, KentPark.eu(5.43, 0.069, 0.00265), w, h)
             counter += 1
 
     # sides concrete
@@ -611,9 +538,9 @@ def model5():
     h = total/sideConcrete
     for section in stru.get_element(1).sections:
         for z in zs:
-            section.add_fiber(counter, -y, -z, w*h, KentPark.eu(5.07, 1, 0.003, 0.002), w, h)
+            section.add_fiber(counter, -y, -z, w*h, KentPark.eu(5.07, 0.003, 0.002), w, h)
             counter += 1
-            section.add_fiber(counter, y, -z, w*h, KentPark.eu(5.07, 1, 0.003, 0.002), w, h)
+            section.add_fiber(counter, y, -z, w*h, KentPark.eu(5.07, 0.003, 0.002), w, h)
             counter += 1
 
     # top concrete
@@ -626,11 +553,11 @@ def model5():
     h = topCover/topConcrete
     for section in stru.get_element(1).sections:
         for z in zs:
-            # section.add_fiber(counter, -y, z, w*h, KentPark.eu(5.07, 1, 0.003, 0.002), w, h)
+            # section.add_fiber(counter, -y, z, w*h, KentPark.eu(5.07, 0.003, 0.002), w, h)
             # counter += 1
-            # section.add_fiber(counter, y, z, w*h, KentPark.eu(5.07, 1, 0.003, 0.002), w, h)
+            # section.add_fiber(counter, y, z, w*h, KentPark.eu(5.07, 0.003, 0.002), w, h)
             # counter += 1
-            section.add_fiber(counter, 0, -z, w*h, KentPark.eu(5.07, 1, 0.003, 0.002), w, h)
+            section.add_fiber(counter, 0, -z, w*h, KentPark.eu(5.07, 0.003, 0.002), w, h)
             counter += 1
 
     # bottom concrete
@@ -643,11 +570,11 @@ def model5():
     h = bottomCover/bottomConcrete
     for section in stru.get_element(1).sections:
         for z in zs:
-            # section.add_fiber(counter, -y, z, w*h, KentPark.eu(5.07, 1, 0.003, 0.002), w, h)
+            # section.add_fiber(counter, -y, z, w*h, KentPark.eu(5.07, 0.003, 0.002), w, h)
             # counter += 1
-            # section.add_fiber(counter, y, z, w*h, KentPark.eu(5.07, 1, 0.003, 0.002), w, h)
+            # section.add_fiber(counter, y, z, w*h, KentPark.eu(5.07, 0.003, 0.002), w, h)
             # counter += 1
-            section.add_fiber(counter, 0, -z, w*h, KentPark.eu(5.07, 1, 0.003, 0.002), w, h)
+            section.add_fiber(counter, 0, -z, w*h, KentPark.eu(5.07, 0.003, 0.002), w, h)
             counter += 1
 
     print(f"Added {counter - 1} fibers.")
@@ -657,9 +584,10 @@ def model5():
     stru.set_section_tolerance(1e-9)
 
     # BOUNDARY CONDITIONS
-    stru.set_controlled_dof_dof(2, "w")
+    stru.set_controlled_dof(2, "w")
     stru.add_dirichlet_condition(1, "uvwxyz", 0)
     stru.add_dirichlet_condition(2, "vxz", 0)
+    stru.add_neumann_condition(2, "w", 1.0)
     print("Added the boundary conditions.")
 
     return stru

@@ -25,14 +25,14 @@ class Section:
         self._fibers = dict()
         self._tolerance = 1e-7
 
-        self.position = None
-        self.weight = None
-
-        self._residual = np.zeros(3)
         self._force_increment = np.zeros(3)
         self._forces = np.zeros(3)
         self._converged_section_forces = np.zeros(3)
         self._unbalance_forces = np.zeros(3)
+        self._residual = np.zeros(3)
+
+        self.position = None
+        self.weight = None
 
         self._flexibility_matrix = np.zeros((3, 3))
         self._b_matrix = np.zeros((3, 5))

@@ -87,30 +87,15 @@ def solution_loop(structure, result_filename="results.dat"):
 if __name__ == "__main__":
     STEP = 0.4
     STEPS = calculate_loadsteps(STEP)
-    STRUCTURE = model4()
+    STRUCTURE = model1_3()
     # p.plot_disctrized_2d(STRUCTURE.get_element(1).get_section(1))
 
-    # concr = []
-    # steel = []
-    # for fiber in STRUCTURE.get_element(1).get_section(1).fibers:
-    #     if isinstance(fiber._material, KentPark):
-    #         concr.append([-fiber.direction[0], fiber.direction[1], fiber.area])
-    # for fiber in STRUCTURE.get_element(1).get_section(1).fibers:
-    #     if isinstance(fiber._material, MenegottoPinto):
-    #         steel.append([-fiber.direction[0], fiber.direction[1], fiber.area])
-
-    # print("CONC")
-    # for fiber in concr:
-    #     print(f"{fiber}")
-    # print("\nSTEE")
-    # for fiber in steel:
-    #     print(f"{fiber}")
     solution_loop(STRUCTURE)
 
-    import matplotlib.pyplot as plt
-    data = np.loadtxt("results.dat", usecols=(8, 14))
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    ax.plot(data[:,0], -data[:,1])
-    ax.grid()
-    plt.show()
+    # import matplotlib.pyplot as plt
+    # data = np.loadtxt("results.dat", usecols=(8, 14))
+    # fig = plt.figure()
+    # ax = fig.add_subplot(111)
+    # ax.plot(data[:,0], -data[:,1])
+    # ax.grid()
+    # plt.show()

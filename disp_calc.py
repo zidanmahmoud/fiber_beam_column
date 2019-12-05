@@ -21,6 +21,6 @@ def calculate_loadsteps(step_size):
     return [round(number) for number in l]
 
 def calculate_loadsteps2(step_size):
-    disps = [0, 1]#, -1.4, 1.5, -1.7, 2.5, -2.1, 2.4, -2.2, 2.1, -2.6, 2, -2.4, 2.3]
+    disps = [0, 1, -1.4, 1.5, -1.7, 2.5, -2.1, 2.4, -2.2, 2.1, -2.6, 2, -2.4, 2.3]
     l = np.cumsum(np.abs(np.diff(disps)/step_size))
     return [int(round(number)+1) for number in l]

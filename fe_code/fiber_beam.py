@@ -36,13 +36,13 @@ class FiberBeam:
         self._nodes = [node1, node2]
         self._sections = dict()
 
-        self._local_stiffness_matrix = np.zeros((5, 5))
-        self._transform_matrix = np.zeros((12, 5))
-
         self._force_increment = np.zeros(5)
         self.resisting_forces = np.zeros(5)
         self.converged_resisting_forces = np.zeros(5)
         self._displacement_residual = np.zeros(5)
+
+        self._local_stiffness_matrix = np.zeros((5, 5))
+        self._transform_matrix = np.zeros((12, 5))
 
         dof_types = "uvwxyz"
         self.dofs = [DoF(node.id, dof_type) for node in self._nodes for dof_type in dof_types]
