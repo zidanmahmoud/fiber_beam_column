@@ -107,6 +107,7 @@ class FiberBeam:
     def state_determination(self, structure_chng_disp_incr, max_ele_iterations):
         #== step 6 ==#
         chng_disp_incr = self._transform_matrix.T @ structure_chng_disp_incr
+        a=5
         for j in range(1, max_ele_iterations + 1):
             #== step 7 ==#
             if j==1:
@@ -119,6 +120,10 @@ class FiberBeam:
             conv = True
             for section in self.sections:
                 conv *= section.state_determination(chng_force_increment)
+                # print(f"section {section.id}:")
+                # for fiber in section.fibers:
+                #     print(fiber.strain)
+                # print()
             #== step 13 ==#
             self._update_local_stiffness_matrix()
             #== step 14 ==#

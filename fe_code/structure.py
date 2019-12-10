@@ -2,6 +2,7 @@
 Module contains the structure class
 """
 import numpy as np
+from copy import copy
 
 from .node import Node
 from .dof import DoF
@@ -63,6 +64,7 @@ class Structure:
         self._stiffness_matrix = None
         self._resisting_forces = None
         self._unbalanced_forces = None
+        self._previous_dx = None
         self._displacement_increment = None
         self._displacement = None
         self._converged_displacement = None
@@ -160,6 +162,7 @@ class Structure:
         self._stiffness_matrix = np.zeros((self.no_dofs, self.no_dofs))
         self._displacement_increment = np.zeros(self.no_dofs)
         self._unbalanced_forces = np.zeros(self.no_dofs)
+        self._previous_dx = np.zeros(self.no_dofs + 1)
         self._displacement_increment = np.zeros(self.no_dofs)
         self._displacement = np.zeros(self.no_dofs)
         self._converged_displacement = np.zeros(self.no_dofs)
@@ -174,11 +177,13 @@ class Structure:
         """
         #== step 4 ==#
         lhs, rhs = self._build_system_NR_displacement_control()
-        self._apply_homogenuous_dirichlet_BCs(lhs)
+        self._apply_homogenuous_dirichlet_BCs(lhs, rhs)
 
-        change_in_increments = np.linalg.solve(lhs, rhs)
-        self._displacement_increment += change_in_increments[:self.no_dofs]
-        self._load_factor_increment += change_in_increments[-1]
+        dx = np.linalg.solve(lhs, rhs)
+        change_in_increments = dx - self._previous_dx
+        self._previous_dx = dx
+        self._displacement_increment = dx[:self.no_dofs]
+        self._load_factor_increment = dx[-1]
         self._displacement = self._converged_displacement + self._displacement_increment
         self._load_factor = self._converged_load_factor + self._load_factor_increment
 
@@ -202,12 +207,11 @@ class Structure:
         external_forces = self._get_external_force_vector() * self._load_factor
 
         self._unbalanced_forces = external_forces - self._resisting_forces
-        for dof, value in self._dirichlet_conditions.items():
-            if value == 0:
-                self._unbalanced_forces[index_from_dof(dof)] = value
+        unbalance = copy(self._unbalanced_forces)
+        self._apply_homogenuous_dirichlet_BCs(vector=unbalance)
 
         #== step 16 ==#
-        res = abs(np.linalg.norm(self._unbalanced_forces))
+        res = abs(np.linalg.norm(unbalance))
         return res < self._tolerance, res
 
 
@@ -260,9 +264,9 @@ class Structure:
         lhs = np.zeros((dofs + 1, dofs + 1))
         lhs[:dofs, :dofs] = self._stiffness_matrix # dr/du
         lhs[:dofs, -1] = -self._get_external_force_vector() # dr/d lam
-        lhs[-1, i] = -1.0 # dr/dC
+        lhs[-1, i] = 1.0 # dr/dC
 
         rhs = np.zeros(dofs + 1)
         rhs[:dofs] = self._unbalanced_forces # r
-        rhs[-1] = self._displacement_increment[i] - self.controlled_dof_increment # C
+        rhs[-1] = self.controlled_dof_increment - self._displacement[i]# C
         return lhs, rhs

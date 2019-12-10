@@ -1,7 +1,7 @@
 import numpy as np
 from math import sqrt, pi
 
-from fe_code import io, Structure, MenegottoPinto, KentPark
+from fe_code import io, Structure, MenegottoPinto, KentPark, LinearElastic
 
 
 def model1_1():
@@ -406,6 +406,116 @@ def model1_3():
             section.add_fiber(counter, -y, z, w*h, KentPark.eu(6.95, 0.03810, 0.0027), w, h)
             counter += 1
             section.add_fiber(counter, y, z, w*h, KentPark.eu(6.95, 0.03810, 0.0027), w, h)
+            counter += 1
+
+    print(f"Added {counter - 1} fibers.")
+
+    # CONVERGENCE TOLERANCE VALUES
+    stru.set_tolerance(1e-9)
+    stru.set_section_tolerance(1e-9)
+
+    # BOUNDARY CONDITIONS
+    stru.set_controlled_dof(2, "w")
+    stru.add_dirichlet_condition(1, "uvwxyz", 0)
+    stru.add_dirichlet_condition(2, "vxz", 0)
+    stru.add_neumann_condition(2, "w", 1.0)
+    print("Added the boundary conditions.")
+
+    return stru
+
+
+def model1_4():
+    """ initiate the structural model """
+
+    length = 100
+    width = 4 + 15/16
+    height = 8.0
+
+    concr = [
+        [0.0, -2.7784432686368103, 0.9089467150600142],
+        [0.0, 2.7784432686368103, 0.9089467150600142],
+        [-0.734375, -4.440892098500626e-16, 7.51085420324126],
+        [0.734375, -4.440892098500626e-16, 7.51085420324126],
+        [-1.96875, 0.0, 6.0],
+        [1.96875, 0.0, 6.0],
+        [-1.234375, 3.5, 2.46875],
+        [1.234375, 3.5, 2.46875],
+        [-1.234375, -3.5, 2.46875],
+        [1.234375, -3.5, 2.46875]
+    ]
+    steel = [
+        [-1.2471932686368106, -2.7784432686368103, 0.19634954084936204],
+        [1.2471932686368106, -2.7784432686368103, 0.19634954084936204],
+        [-1.2471932686368106, 2.7784432686368103, 0.19634954084936204],
+        [1.2471932686368106, 2.7784432686368103, 0.19634954084936204]
+    ]
+
+    no_sections = 4
+
+    # STRUCTURE INITIALIZATION
+    stru = Structure()
+    print("Constructed an empty stucture.")
+
+    # NODES
+    stru.add_node(1, 0.0, 0.0, 0.0)
+    stru.add_node(2, length, 0.0, 0.0)
+    print(f"Added {len(stru.nodes)} nodes.")
+
+    # ELEMENTS
+    stru.add_fiber_beam_element(1, 1, 2)
+    print(f"Added {len(stru.elements)} elements.")
+
+    # SECTIONS
+    for i in range(no_sections):
+        stru.get_element(1).add_section(i + 1)
+    print(f"Added {sum([len(element.sections) for element in stru.elements])} sections.")
+
+    # FIBERS
+    counter = 1
+
+    for section in stru.get_element(1).sections:
+        # for concr_fibr in concr:
+        #     section.add_fiber(
+        #         counter,
+        #         concr_fibr[0],
+        #         concr_fibr[1],
+        #         concr_fibr[2],
+        #         KentPark.eu(6.95, 0.0381, 0.0027),
+        #         sqrt(concr_fibr[2]),
+        #         sqrt(concr_fibr[2])
+        #     )
+        #     counter += 1
+        # for steel_fibr in steel:
+        #     section.add_fiber(
+        #         counter,
+        #         steel_fibr[0],
+        #         steel_fibr[1],
+        #         steel_fibr[2],
+        #         MenegottoPinto(29000, 0.0042, 48.4, 20, 18.5, 0.0002),
+        #         sqrt(steel_fibr[2]),
+        #         sqrt(steel_fibr[2])
+        #     )
+        for concr_fibr in concr:
+            section.add_fiber(
+                counter,
+                concr_fibr[0],
+                concr_fibr[1],
+                concr_fibr[2],
+                LinearElastic(25000),
+                sqrt(concr_fibr[2]),
+                sqrt(concr_fibr[2])
+            )
+            counter += 1
+        for steel_fibr in steel:
+            section.add_fiber(
+                counter,
+                steel_fibr[0],
+                steel_fibr[1],
+                steel_fibr[2],
+                LinearElastic(25000),
+                sqrt(steel_fibr[2]),
+                sqrt(steel_fibr[2])
+            )
             counter += 1
 
     print(f"Added {counter - 1} fibers.")

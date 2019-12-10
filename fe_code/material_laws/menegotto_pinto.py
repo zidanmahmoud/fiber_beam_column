@@ -105,8 +105,7 @@ class MenegottoPinto(UniaxialIncrementalMaterial):
         reversal : bool
             flag True if reversed
         """
-        reversal = self._set_trial_state(fiber_strain)
-        return reversal
+        self._set_trial_state(fiber_strain)
 
     def _set_trial_state(self, new_strain):
         fy = self._fy
@@ -121,6 +120,8 @@ class MenegottoPinto(UniaxialIncrementalMaterial):
             self._strain = new_strain
 
         deps = self._strain - self._c_strain
+        if abs(deps) < 1e-15:  # nearly zero
+            return
 
         self._strain_max = self._c_strain_max
         self._strain_min = self._c_strain_min
@@ -132,33 +133,22 @@ class MenegottoPinto(UniaxialIncrementalMaterial):
         self._loading_index = self._c_loading_index
 
         if self._loading_index == 0 or self._loading_index == 3:
+            self._strain_max = strain_y
+            self._strain_min = -strain_y
 
-            if abs(deps) < 1e-15:  # nearly zero
-                # self._Et = E
-                # self._stress = 0.0
-                # self._loading_index = 3
-                return False
+            if deps < 0:
+                self._loading_index = 2
+                self._strain_0 = self._strain_min
+                self._stress_0 = -fy
+                self._strain_plastic = self._strain_min
 
             else:
-                self._strain_max = strain_y
-                self._strain_min = -strain_y
-
-                if deps < 0:
-                    self._loading_index = 2
-                    self._strain_0 = self._strain_min
-                    self._stress_0 = -fy
-                    self._strain_plastic = self._strain_min
-
-                else:
-                    self._loading_index = 1
-                    self._strain_0 = self._strain_max
-                    self._stress_0 = fy
-                    self._strain_plastic = self._strain_max
-
-        reversal = False
+                self._loading_index = 1
+                self._strain_0 = self._strain_max
+                self._stress_0 = fy
+                self._strain_plastic = self._strain_max
 
         if self._loading_index == 2 and deps > 0:
-            reversal = True
             self._loading_index = 1
             self._strain_r = self._c_strain
             self._stress_r = self._c_stress
@@ -171,7 +161,6 @@ class MenegottoPinto(UniaxialIncrementalMaterial):
             self._strain_plastic = self._strain_max
 
         elif self._loading_index == 1 and deps < 0:
-            reversal = True
             self._loading_index = 2
             self._strain_r = self._c_strain
             self._stress_r = self._c_stress
@@ -192,8 +181,6 @@ class MenegottoPinto(UniaxialIncrementalMaterial):
         self._stress = sg_star * (self._stress_0 - self._stress_r) + self._stress_r
         self._Et = b + (1.0 - b) / (dum1 * dum2)
         self._Et *= (self._stress_0 - self._stress_r) / (self._strain_0 - self._strain_r)
-
-        return reversal
 
     def finalize_load_step(self):
         """
