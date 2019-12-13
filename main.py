@@ -12,35 +12,35 @@ def advance_in_load(structure, load_step):
     """ load stepping loop """
 
     if load_step < STEPS[0]:
-        structure.controlled_dof_increment += STEP
+        structure.prescribed_displacement += STEP
     elif load_step < STEPS[1]:
-        structure.controlled_dof_increment += -STEP
+        structure.prescribed_displacement += -STEP
     elif load_step < STEPS[2]:
-        structure.controlled_dof_increment += STEP
+        structure.prescribed_displacement += STEP
     elif load_step < STEPS[3]:
-        structure.controlled_dof_increment += -STEP
+        structure.prescribed_displacement += -STEP
     elif load_step < STEPS[4]:
-        structure.controlled_dof_increment += STEP
+        structure.prescribed_displacement += STEP
     elif load_step < STEPS[5]:
-        structure.controlled_dof_increment += -STEP
+        structure.prescribed_displacement += -STEP
     elif load_step < STEPS[6]:
-        structure.controlled_dof_increment += STEP
+        structure.prescribed_displacement += STEP
     elif load_step < STEPS[7]:
-        structure.controlled_dof_increment += -STEP
+        structure.prescribed_displacement += -STEP
     elif load_step < STEPS[8]:
-        structure.controlled_dof_increment += STEP
+        structure.prescribed_displacement += STEP
     elif load_step < STEPS[9]:
-        structure.controlled_dof_increment += -STEP
+        structure.prescribed_displacement += -STEP
     elif load_step < STEPS[10]:
-        structure.controlled_dof_increment += STEP
+        structure.prescribed_displacement += STEP
     elif load_step < STEPS[11]:
-        structure.controlled_dof_increment += -STEP
+        structure.prescribed_displacement += -STEP
     elif load_step < STEPS[12]:
-        structure.controlled_dof_increment += STEP
+        structure.prescribed_displacement += STEP
     elif load_step < STEPS[13]:
-        structure.controlled_dof_increment += -STEP
+        structure.prescribed_displacement += -STEP
     else:
-        structure.controlled_dof_increment += STEP
+        structure.prescribed_displacement += STEP
 
 
 def solution_loop(structure, result_filename="results.dat"):
@@ -92,10 +92,10 @@ if __name__ == "__main__":
 
     solution_loop(STRUCTURE)
 
-    # import matplotlib.pyplot as plt
-    # data = np.loadtxt("results.dat", usecols=(8, 14))
-    # fig = plt.figure()
-    # ax = fig.add_subplot(111)
-    # ax.plot(data[:,0], -data[:,1])
-    # ax.grid()
-    # plt.show()
+    import matplotlib.pyplot as plt
+    data = np.loadtxt("results.dat", usecols=(8, 14))
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.plot(data[:,0], -data[:,1])
+    ax.grid()
+    plt.show()

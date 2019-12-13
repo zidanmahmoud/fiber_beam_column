@@ -25,9 +25,7 @@ class Section:
         self._fibers = dict()
         self._tolerance = 1e-7
 
-        self._force_increment = np.zeros(3)
         self._forces = np.zeros(3)
-        self._converged_section_forces = np.zeros(3)
         self._unbalance_forces = np.zeros(3)
         self._residual = np.zeros(3)
 
@@ -95,23 +93,22 @@ class Section:
     def get_global_residuals(self):
         return self._b_matrix.T @ self._residual
 
-    def state_determination(self, ele_chng_force_increment):
+    def state_determination(self, ele_force_increment):
         #== step 8 ==#
-        chng_force_increment = self._b_matrix @ ele_chng_force_increment
-        self._force_increment += chng_force_increment
-        self._forces = self._converged_section_forces + self._force_increment
+        force_increment = self._b_matrix @ ele_force_increment
+        self._forces += force_increment
         #== step 9 ==#
-        chng_def_increment = self._residual + self._flexibility_matrix @ chng_force_increment
+        def_increment = self._residual + self._flexibility_matrix @ force_increment
         #== step 10 ==#
         for fiber in self.fibers:
-            fiber.state_determination(chng_def_increment)
+            fiber.state_determination(def_increment)
         #== step 11 ==#
         self._update_flexibility_matrix()
         #== step 12 ==#
-        resisting_forces = np.zeros(3)
+        internal_forces = np.zeros(3)
         for fiber in self.fibers:
-            resisting_forces += fiber.stress * fiber.area * fiber.direction
-        self._unbalance_forces = self._forces - resisting_forces
+            internal_forces += fiber.stress * fiber.area * fiber.direction
+        self._unbalance_forces = self._forces - internal_forces
         self._residual = self._flexibility_matrix @ self._unbalance_forces
         return abs(np.linalg.norm(self._unbalance_forces)) < self._tolerance
 
@@ -122,8 +119,6 @@ class Section:
         """
         finalize for next load step
         """
-        self._converged_section_forces = self._forces
-        self._force_increment.fill(0.0)
         for fiber in self.fibers:
             fiber.finalize_load_step()
 

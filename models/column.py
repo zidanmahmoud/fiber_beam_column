@@ -474,34 +474,13 @@ def model1_4():
     counter = 1
 
     for section in stru.get_element(1).sections:
-        # for concr_fibr in concr:
-        #     section.add_fiber(
-        #         counter,
-        #         concr_fibr[0],
-        #         concr_fibr[1],
-        #         concr_fibr[2],
-        #         KentPark.eu(6.95, 0.0381, 0.0027),
-        #         sqrt(concr_fibr[2]),
-        #         sqrt(concr_fibr[2])
-        #     )
-        #     counter += 1
-        # for steel_fibr in steel:
-        #     section.add_fiber(
-        #         counter,
-        #         steel_fibr[0],
-        #         steel_fibr[1],
-        #         steel_fibr[2],
-        #         MenegottoPinto(29000, 0.0042, 48.4, 20, 18.5, 0.0002),
-        #         sqrt(steel_fibr[2]),
-        #         sqrt(steel_fibr[2])
-        #     )
         for concr_fibr in concr:
             section.add_fiber(
                 counter,
                 concr_fibr[0],
                 concr_fibr[1],
                 concr_fibr[2],
-                LinearElastic(25000),
+                KentPark.eu(6.95, 0.0381, 0.0027),
                 sqrt(concr_fibr[2]),
                 sqrt(concr_fibr[2])
             )
@@ -512,11 +491,33 @@ def model1_4():
                 steel_fibr[0],
                 steel_fibr[1],
                 steel_fibr[2],
-                LinearElastic(25000),
+                MenegottoPinto(29000, 0.0042, 48.4, 20, 18.5, 0.0002),
                 sqrt(steel_fibr[2]),
                 sqrt(steel_fibr[2])
             )
             counter += 1
+        # for concr_fibr in concr:
+        #     section.add_fiber(
+        #         counter,
+        #         concr_fibr[0],
+        #         concr_fibr[1],
+        #         concr_fibr[2],
+        #         LinearElastic(25000),
+        #         sqrt(concr_fibr[2]),
+        #         sqrt(concr_fibr[2])
+        #     )
+        #     counter += 1
+        # for steel_fibr in steel:
+        #     section.add_fiber(
+        #         counter,
+        #         steel_fibr[0],
+        #         steel_fibr[1],
+        #         steel_fibr[2],
+        #         LinearElastic(25000),
+        #         sqrt(steel_fibr[2]),
+        #         sqrt(steel_fibr[2])
+        #     )
+        #     counter += 1
 
     print(f"Added {counter - 1} fibers.")
 

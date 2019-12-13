@@ -42,7 +42,7 @@ class Structure:
     no_dofs : flaot
         number of dofs
 
-    controlled_dof_increment : float
+    prescribed_displacement : float
         used in the displacement-control solver
     """
 
@@ -55,19 +55,14 @@ class Structure:
 
         self._controlled_dof = None
 
-        self._load_factor_increment = 0.0
+        self._displacement = None
         self._load_factor = 0.0
-        self._converged_load_factor = 0.0
-        self.controlled_dof_increment = 0.0
+        self.prescribed_displacement = 0.0
 
         # initialized as None because the number of dofs is not yet determined
         self._stiffness_matrix = None
-        self._resisting_forces = None
+        self._internal_forces = None
         self._unbalanced_forces = None
-        self._previous_dx = None
-        self._displacement_increment = None
-        self._displacement = None
-        self._converged_displacement = None
 
     def set_tolerance(self, value):
         self._tolerance = value
@@ -130,18 +125,18 @@ class Structure:
     def get_force(self, dof):
         node_id, dof_type = dof
         i = index_from_dof(DoF(node_id, dof_type))
-        return self._resisting_forces[i]
+        return self._internal_forces[i]
 
     def get_forces(self):
-        return self._resisting_forces
+        return self._internal_forces
 
     def get_displacement(self, dof):
         node_id, dof_type = dof
         i = index_from_dof(DoF(node_id, dof_type))
-        return self._converged_displacement[i]
+        return self._displacement[i]
 
     def get_displacements(self):
-        return self._converged_displacement
+        return self._displacement
 
     def get_dof_value(self, dof):
         if isinstance(dof, DoF):
@@ -152,7 +147,7 @@ class Structure:
         else:
             raise
         i = index_from_dof(DoF(node_id, dof_type))
-        return self._converged_displacement[i]
+        return self._displacement[i]
 
     ####################################################################################
 
@@ -160,13 +155,10 @@ class Structure:
         """ initialize all arrays and stuff """
         #== step 1 ==#
         self._stiffness_matrix = np.zeros((self.no_dofs, self.no_dofs))
-        self._displacement_increment = np.zeros(self.no_dofs)
         self._unbalanced_forces = np.zeros(self.no_dofs)
-        self._previous_dx = np.zeros(self.no_dofs + 1)
-        self._displacement_increment = np.zeros(self.no_dofs)
         self._displacement = np.zeros(self.no_dofs)
         self._converged_displacement = np.zeros(self.no_dofs)
-        self._resisting_forces = np.zeros(self.no_dofs)
+        self._internal_forces = np.zeros(self.no_dofs)
         for element in self.elements:
             element.initialize()
         self._update_stiffness_matrix()
@@ -180,33 +172,30 @@ class Structure:
         self._apply_homogenuous_dirichlet_BCs(lhs, rhs)
 
         dx = np.linalg.solve(lhs, rhs)
-        change_in_increments = dx - self._previous_dx
-        self._previous_dx = dx
-        self._displacement_increment = dx[:self.no_dofs]
-        self._load_factor_increment = dx[-1]
-        self._displacement = self._converged_displacement + self._displacement_increment
-        self._load_factor = self._converged_load_factor + self._load_factor_increment
+        self._displacement += dx[:self.no_dofs]
+        self._load_factor += dx[-1]
 
         #== steps 5-14 ==#
         for element in self.elements:
             indices = [index_from_dof(dof) for dof in element.dofs]
             element.state_determination(
-                change_in_increments[:self.no_dofs][indices], max_ele_iterations)
+                dx[:self.no_dofs][indices], max_ele_iterations
+            )
 
         #== step 15 ==#
         self._update_stiffness_matrix()
         for element in self.elements:
             element.reset_section_residuals()
 
-        self._resisting_forces.fill(0.0)
+        self._internal_forces.fill(0.0)
         for element in self.elements:
-            f_e = element.get_global_resisting_forces()
+            f_e = element.get_global_internal_forces()
             i = [index_from_dof(dof) for dof in element.dofs]
-            self._resisting_forces[i] += f_e
+            self._internal_forces[i] += f_e
 
         external_forces = self._get_external_force_vector() * self._load_factor
 
-        self._unbalanced_forces = external_forces - self._resisting_forces
+        self._unbalanced_forces = external_forces - self._internal_forces
         unbalance = copy(self._unbalanced_forces)
         self._apply_homogenuous_dirichlet_BCs(vector=unbalance)
 
@@ -216,13 +205,9 @@ class Structure:
 
 
     def finalize_load_step(self):
-        self._displacement_increment.fill(0.0)
-        self._load_factor_increment = 0.0
-        self._converged_displacement = self._displacement
-        self._converged_load_factor = self._load_factor
         for node in self.nodes:
             indices = [index_from_dof(DoF(node.id, dof_type)) for dof_type in "uvw"]
-            node.u, node.v, node.w = self._converged_displacement[indices]
+            node.u, node.v, node.w = self._displacement[indices]
         for element in self.elements:
             element.finalize_load_step()
 
@@ -268,5 +253,5 @@ class Structure:
 
         rhs = np.zeros(dofs + 1)
         rhs[:dofs] = self._unbalanced_forces # r
-        rhs[-1] = self.controlled_dof_increment - self._displacement[i]# C
+        rhs[-1] = self.prescribed_displacement - self._displacement[i]# C
         return lhs, rhs

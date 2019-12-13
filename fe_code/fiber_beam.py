@@ -36,9 +36,7 @@ class FiberBeam:
         self._nodes = [node1, node2]
         self._sections = dict()
 
-        self._force_increment = np.zeros(5)
-        self.resisting_forces = np.zeros(5)
-        self.converged_resisting_forces = np.zeros(5)
+        self._internal_forces = np.zeros(5)
         self._displacement_residual = np.zeros(5)
 
         self._local_stiffness_matrix = np.zeros((5, 5))
@@ -98,38 +96,33 @@ class FiberBeam:
         """
         return self._transform_matrix @ self._local_stiffness_matrix @ self._transform_matrix.T
 
-    def get_global_resisting_forces(self):
+    def get_global_internal_forces(self):
         """
         l_e^T . D_R
         """
-        return self._transform_matrix @ self.resisting_forces
+        return self._transform_matrix @ self._internal_forces
 
-    def state_determination(self, structure_chng_disp_incr, max_ele_iterations):
+    def state_determination(self, structure_disp_incr, max_ele_iterations):
         #== step 6 ==#
-        chng_disp_incr = self._transform_matrix.T @ structure_chng_disp_incr
-        a=5
+        def_incr = self._transform_matrix.T @ structure_disp_incr
+        a = 5
         for j in range(1, max_ele_iterations + 1):
             #== step 7 ==#
             if j==1:
-                chng_force_increment = self._local_stiffness_matrix @ chng_disp_incr
+                force_increment = self._local_stiffness_matrix @ def_incr
             else:
-                chng_force_increment = -self._local_stiffness_matrix @ self._displacement_residual
-            self._force_increment += chng_force_increment
-            self.resisting_forces = self.converged_resisting_forces + self._force_increment
+                force_increment = -self._local_stiffness_matrix @ self._displacement_residual
+            self._internal_forces += force_increment
             #== steps 8-12 ==#
             conv = True
             for section in self.sections:
-                conv *= section.state_determination(chng_force_increment)
-                # print(f"section {section.id}:")
-                # for fiber in section.fibers:
-                #     print(fiber.strain)
-                # print()
+                conv *= section.state_determination(force_increment)
             #== step 13 ==#
             self._update_local_stiffness_matrix()
             #== step 14 ==#
             if conv:
                 print(f"Element {self._id} converged with {j} iteration(s).")
-                return # FIXME:break piece of shite
+                return
             else:
                 J = self._get_jacobian_determinant()
                 self._displacement_residual.fill(0.0)
@@ -145,8 +138,6 @@ class FiberBeam:
         """
         finalize for next load step
         """
-        self.converged_resisting_forces = self.resisting_forces
-        self._force_increment.fill(0.0)
         for section in self.sections:
             section.finalize_load_step()
 
@@ -201,7 +192,7 @@ class FiberBeam:
         node2_coords = self._nodes[1].get_reference_location()
         v1 = node2_coords - node1_coords
         e1 = v1 / np.linalg.norm(v1)
-        # TODO: Generalize e2 ...
+        # TODO: Generalize e2 ... ??
         e2 = np.array([0, 1, 0])
         e3 = np.cross(e1, e2)
         return e1, e2, e3
